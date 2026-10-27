@@ -23,8 +23,8 @@ try await importer.write(dtos) { batch, storage in
 
 `Tests/CoreDataMappingTests/MedicalCongress` містить тестову систему медичних
 конгресів: модель `MedicalCongressModel.xcdatamodeld`, класи в `Entities`,
-сценарії в `Cases` і код запису графа. Кожен сценарій має окремий файл і test
-suite. Тести використовують `NSInMemoryStoreType` та перевіряють спільні й
+сценарії в `Suites` і код запису графа. Кожен suite об’єднує кілька незалежних
+тестів одного потоку. Тести використовують `NSInMemoryStoreType` та перевіряють спільні й
 дочірні зв’язки, кілька імпортів, rollback і cancellation. Тестова схема не
 входить у library product.
 

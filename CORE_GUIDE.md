@@ -5,7 +5,7 @@
 Приклад із медичним конгресом, двома подіями та спільними людьми, кімнатами й
 матеріалами є у `Tests/CoreDataMappingTests/MedicalCongress/GraphWriter.swift`.
 Перевірки збережених Entity — у `MedicalCongress/GraphAssertions.swift`, окремі
-сценарії — у `MedicalCongress/Cases`. Таблиця relationships — у
+сценарії — у `MedicalCongress/Suites`. Таблиця relationships — у
 [TESTING.md](TESTING.md). Усе це один test target з in-memory store.
 
 ## 1. Що робить core

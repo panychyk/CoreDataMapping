@@ -20,8 +20,8 @@ fields і relationships; він не викликає `save`, `rollback` або 
 `NSManagedObject` класи, `GraphCases` — невеликий зв’язний граф із двома подіями,
 а `GraphWriter` — правила запису. `CongressTestStack` завантажує скомпільовану
 модель у `NSInMemoryStoreType`. `GraphAssertions` перевіряє збережений граф і
-відсутність осиротілих owned-записів. Кожен сценарій у `Cases` має окремий
-файл і suite. У target немає мережевого, repository чи domain-шару; тестова
+відсутність осиротілих owned-записів. Сценарії у `Suites` згруповані за
+потоками; кожен suite містить кілька окремих тестів. У target немає мережевого, repository чи domain-шару; тестова
 схема не є частиною публічного API.
 Стратегія тестів і опис зв’язків — у [TESTING.md](TESTING.md).
 
