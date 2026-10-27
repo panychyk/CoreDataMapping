@@ -36,5 +36,6 @@
 - Build the package with `swift build`.
 - Run `swift test`; the package test target covers identity, graph lifecycle,
   SQLite persistence, cancellation, migrations, and import batches.
-- After changing `Resources/GraphModel.xcdatamodeld`, run
-  `Scripts/update-test-model.sh` and commit the compiled `.momd` with it.
+- After changing `Tests/CoreDataMappingTests/Resources/GraphModel.xcdatamodeld`,
+  run `./Scripts/update-test-model.sh` from the package root and commit the
+  generated `Tests/CoreDataMappingTests/Resources/GraphModel.momd` with it.
