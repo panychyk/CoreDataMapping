@@ -15,10 +15,17 @@ container, networking, feature mappers і repositories визначає заст
 Пакет не декодує DTO й не обходить граф автоматично. Mapper явно встановлює scalar
 fields і relationships; він не викликає `save`, `rollback` або `reset`.
 
-`Tests/CoreDataMappingTests/Example` — тестовий споживач пакета. Його DTO, Entity,
-schema, `CoreDataStack`, мапери й repositories компілюються лише в test target.
-Вони показують конкретний граф, але не є частиною публічного API. Стратегія
-тестів і опис зв’язків — у [TESTING.md](TESTING.md).
+`Tests/CoreDataMappingTests/Resources/GraphModel.xcdatamodeld` містить тестову
+схему з п’ятьма окремими root Entity (`Document`, `Folder`, `Dashboard`, `Board`,
+`Workspace`), спільним `Resource` і двома рівнями owned-дітей (`Section`,
+`Entry`). `Fixtures/Entities` містить їхні `NSManagedObject` класи, а
+`Fixtures/GraphWriter.swift` — код запису. `CoreDataTestStack.swift` завантажує
+скомпільовану модель у тестовий persistent container.
+`Fixtures/GraphAssertions.swift` перевіряє збережений стан безпосередньо;
+сценарії життєвого циклу, конкуренції та схеми лежать в окремих тестових файлах.
+У target немає мережевого, repository чи domain-шару; тестова
+схема не є частиною публічного API.
+Стратегія тестів і опис зв’язків — у [TESTING.md](TESTING.md).
 
 ## Context і concurrency
 

@@ -1,21 +1,25 @@
 # Практичний посібник: core і зв’язки
 
-Це посібник із використання `CoreDataMapping` у застосунку. Почніть із [README](README.md); інваріанти пакета й межі його відповідальності описані в [ARCHITECTURE.md](ARCHITECTURE.md). Назви DTO та Entity у фрагментах коду — приклади; конкретні типи визначає застосунок.
+Це посібник із використання `CoreDataMapping` у застосунку. Почніть із [README](README.md); інваріанти пакета й межі його відповідальності описані в [ARCHITECTURE.md](ARCHITECTURE.md). Назви вхідних snapshots та Entity у фрагментах коду — приклади; конкретні типи визначає споживач пакета.
 
-Повний робочий приклад цих правил є у `Tests/CoreDataMappingTests/Example`, а
-перевірки й таблиця його relationships — у [TESTING.md](TESTING.md).
+Компактний приклад із п’ятьма незалежними root Entity (`Document`, `Folder`,
+`Dashboard`, `Board`, `Workspace`) та спільним `Resource` є у
+`Tests/CoreDataMappingTests/Fixtures/GraphWriter.swift`; перевірки збережених
+Entity — у `Fixtures/GraphAssertions.swift`, сценарії — у `GraphLifecycleTests.swift`
+та `GraphConcurrencyTests.swift`. Таблиця relationships — у
+[TESTING.md](TESTING.md). Усе це один test target.
 
 ## 1. Що робить core
 
 | Частина | Для чого потрібна | Чого не вирішує |
 |---|---|---|
-| `CoreDataEntityIdentity<Entity, Id>` | Називає Entity, її єдиний атрибут identity та Swift key path до нього | Не конструює ID із DTO і не створює constraint у моделі |
-| `CoreDataStorage` | У межах одного context пакетно знаходить/створює записи та допомагає узгодити relationships | Не декодує DTO, не вибирає власника дитини й не викликає `save` |
-| `CoreDataImporter` | Виконує `write`, `read` і малі `transaction` на одному private context, серіалізує виклики | Не вирішує, який API snapshot новіший і які root-записи видаляти |
+| `CoreDataEntityIdentity<Entity, Id>` | Називає Entity, її єдиний атрибут identity та Swift key path до нього | Не конструює ID із вхідних значень і не створює constraint у моделі |
+| `CoreDataStorage` | У межах одного context пакетно знаходить/створює записи та допомагає узгодити relationships | Не декодує вхідні дані, не вибирає власника дитини й не викликає `save` |
+| `CoreDataImporter` | Виконує `write`, `read` і малі `transaction` на одному private context, серіалізує виклики | Не вирішує, який snapshot новіший і які root-записи видаляти |
 
-Ці три частини містяться у двох файлах пакета: [CoreDataStorage.swift](Sources/CoreDataMapping/CoreDataStorage.swift) (включно з identity) та [CoreDataImporter.swift](Sources/CoreDataMapping/CoreDataImporter.swift). `CoreDataStack`, `.xcdatamodel`, DTO, мапери й repositories належать застосунку.
+Ці три частини містяться у двох файлах пакета: [CoreDataStorage.swift](Sources/CoreDataMapping/CoreDataStorage.swift) (включно з identity) та [CoreDataImporter.swift](Sources/CoreDataMapping/CoreDataImporter.swift). `CoreDataStack`, `.xcdatamodel`, вхідні snapshots і правила запису графа належать споживачу.
 
-**Контракт mapper-а:** він працює лише на черзі context, отриманого через importer, і не передає `NSManagedObject` назовні. DTO для `write` має бути `Sendable`; результат `read` або `transaction` також має бути `Sendable`. У mapper не викликайте `save`, `rollback` чи `reset`.
+**Контракт mapper-а:** він працює лише на черзі context, отриманого через importer, і не передає `NSManagedObject` назовні. Вхідне значення для `write` має бути `Sendable`; результат `read` або `transaction` також має бути `Sendable`. У mapper не викликайте `save`, `rollback` чи `reset`.
 
 Шпаргалка операцій `CoreDataStorage`:
 
@@ -23,7 +27,7 @@
 |---|---|
 | `existing(ids:identifiedBy:)` | Пакетний пошук; відсутні ID пропущені, нові Entity не створюються |
 | `upsert(ids:identifiedBy:)` | Пакетний пошук і створення відсутніх Entity з автоматичним присвоєнням identity; scalar-поля заповнює mapper |
-| `upsert(_:id:identifiedBy:update:)` | Те саме, а потім `update` для кожного DTO у вхідному порядку |
+| `upsert(_:id:identifiedBy:update:)` | Те саме, а потім `update` для кожного вхідного значення у вхідному порядку |
 | `insert(_:)` | Створення Entity без глобального lookup, з моделі поточного context |
 | `replace(with:)` / `replaceUnordered(with:)` | Новий набір членів зв’язку без видалення Entity |
 | `reconcileOwned` / `deleteSurplusOwned` | Видалення зайвих owned children у **повному** snapshot |
@@ -44,42 +48,40 @@ nonisolated extension ReservationTopicEntity {
 }
 ```
 
-Коли `topicDTOs: [ReservationTopicDTO]` уже декодовано, використайте `importer`, створений від завантаженого persistent container:
+Коли `topicSnapshots: [TopicSnapshot]` уже підготовлено, використайте `importer`, створений від завантаженого persistent container:
 
 ```swift
-try await importer.write(topicDTOs) { batch, storage in
+try await importer.write(topicSnapshots) { batch, storage in
     _ = try storage.upsert(
         batch,
-        id: \ReservationTopicDTO.ReservationTopicID,
+        id: \TopicSnapshot.id,
         identifiedBy: ReservationTopicEntity.identity
-    ) { entity, dto in
-        entity.name = dto.Name
+    ) { entity, snapshot in
+        entity.name = snapshot.name
     }
 }
 
-let ids = topicDTOs.map(\.ReservationTopicID)
-let topics = try await importer.read(ids) { ids, storage in
+let ids = topicSnapshots.map(\.id)
+let names = try await importer.read(ids) { ids, storage in
     let byId = try storage.existing(
         ids: ids,
         identifiedBy: ReservationTopicEntity.identity
     )
-    return ids.compactMap { id in
-        byId[id].map { ReservationTopic(id: $0.id, name: $0.name) }
-    }
+    return ids.compactMap { byId[$0]?.name }
 }
 ```
 
-`upsert` спершу готує всі distinct ID, потім оновлює DTO у вхідному порядку. Повторний ID отримує останні scalar-значення. `existing` повертає лише знайдені записи; політику для відсутнього обов’язкового root задає repository. Жодна з цих операцій не видаляє root, відсутній у відповіді.
+`upsert` спершу готує всі distinct ID, потім оновлює вхідні значення у заданому порядку. Повторний ID отримує останні scalar-значення. `existing` повертає лише знайдені записи; політику для відсутнього обов’язкового root задає код споживача. Жодна з цих операцій не видаляє root, відсутній у вхідному наборі.
 
 `write` зберігає й звільняє context після кожної порції roots (`batchSize`, типово 500). Помилка або скасування відкотить поточну порцію; раніше збережені порції залишаться. `read` іде тією самою чергою, не дозволяє mutations і повертає лише Swift-значення. `transaction` призначено для малої атомарної операції. `fetchChunkSize` у storage окремо обмежує розмір пошуку `IN`; це не розмір commit-порції.
 
-Для кількох repositories, які змінюють спільні записи, передавайте один importer. Після `write` окремий `read` бачить актуальний кеш; між цими викликами може завершитися інший імпорт, тому результат не є ізольованим знімком однієї API-відповіді.
+Для кількох операцій, які змінюють спільні записи, передавайте один importer. Після `write` окремий `read` бачить актуальний кеш; між цими викликами може завершитися інший імпорт, тому результат не є ізольованим знімком одного вхідного snapshot.
 
 ## 3. Підготувати граф і вибрати операцію для зв’язку
 
 Порядок для batch mapper-а:
 
-1. Для повних повторних root snapshots визначте актуальний DTO кожного ID **до** поділу на порції. Останній snapshot кожного root має перемагати.
+1. Для повних повторних root snapshots визначте актуальний snapshot кожного ID **до** поділу на порції. Останній snapshot кожного root має перемагати.
 2. Пакетно викличте `upsert` для roots і залежностей із глобальними ID. Для наявних children із parent-scoped ID завантажте relationship батька через `prefetching`.
 3. З’єднайте готові об’єкти зі словників `[Id: Entity]`; fetch усередині циклу зв’язування не робіть.
 4. Для повного snapshot видаліть лише пропущених **owned** children. Shared-об’єкти залиште в store.
@@ -103,13 +105,13 @@ let current = try CoreDataStorage.ordered(
     as: CustomFieldEntity.self
 )
 let incoming = try storage.reconcileOwned(
-    dto.CustomFields ?? [],
+    snapshot.customFields ?? [],
     current: current,
-    dtoId: \CustomFieldDTO.CustomFieldID,
+    dtoId: \CustomFieldSnapshot.id,
     entityId: \CustomFieldEntity.id,
     create: { try storage.insert(CustomFieldEntity.self) }
-) { field, fieldDTO in
-    try CustomFieldEntityMapper().update(field, from: fieldDTO, using: storage)
+) { field, fieldSnapshot in
+    try CustomFieldEntityMapper().update(field, from: fieldSnapshot, using: storage)
     field.appointment = appointment
 }
 appointment.customFields = try storage.replace(with: incoming)
@@ -119,7 +121,7 @@ appointment.customFields = try storage.replace(with: incoming)
 
 Якщо child mapper потребує ID батька або словник залежностей, передайте їх параметрами з parent mapper-а. У моделі, яка має обидві властивості, `child.parentId = parent.id` зберігає scalar, а `child.parent = parent` встановлює relationship. Для child → shared user передайте вже підготовлений `usersById`; окремий fetch у child mapper-і не потрібний.
 
-**Повний чи частковий payload:** у прикладі повного snapshot `nil`/відсутня колекція означає `[]` і очищає owned children. Для часткового API такий запис може випадково стерти дані. Розрізняйте «поле не надіслано», `null` і `[]` окремим DTO/mapper contract; не запускайте reconciliation за неповною сторінкою.
+**Повний чи частковий payload:** у прикладі повного snapshot `nil`/відсутня колекція означає `[]` і очищає owned children. Для часткового snapshot такий запис може випадково стерти дані. Розрізняйте «поле не надіслано», `null` і `[]` окремим контрактом вхідних значень та правил запису; не запускайте reconciliation за неповною сторінкою.
 
 ## 4. Delete Rule: що станеться при видаленні батька
 
@@ -181,12 +183,12 @@ Core Data дозволяє uniqueness constraint із кількох атриб�
 
 ## 6. Якщо відповідь не є простим повним snapshot
 
-| Ситуація | Рішення на рівні feature mapper/repository |
+| Ситуація | Рішення на рівні graph writer |
 |---|---|
 | API повертає сторінки | Не видаляйте дітей після однієї неповної сторінки. Узгодьте повний snapshot батька після отримання всіх сторінок або задайте окрему політику merge |
-| Root зник із повного списку | `upsert` сам його не видаляє. Repository має отримати deleted IDs або порівняти повний список у потрібному scope й явно видалити root |
+| Root зник із повного списку | `upsert` сам його не видаляє. Код споживача має отримати deleted IDs або порівняти повний список у потрібному scope й явно видалити root |
 | Циклічні зв’язки або лише ID залежності | Спочатку підготуйте identities всіх потрібних типів, потім з’єднайте граф. Для відсутньої залежності явно оберіть помилку, відкладений зв’язок або валідний placeholder |
-| Кілька повних snapshots одного root | Залиште останній DTO перед поділом на batch, інакше старіший snapshot може зайво видалити й створити owned children |
+| Кілька повних snapshots одного root | Залиште останній snapshot перед поділом на batch, інакше старіший snapshot може зайво видалити й створити owned children |
 
 ## 7. Коротка перевірка перед використанням
 
@@ -194,4 +196,4 @@ Core Data дозволяє uniqueness constraint із кількох атриб�
 - Shared-записи переживають розрив зв’язку й видалення одного з батьків; owned-записи зникають після видалення свого батька.
 - Однакові scoped child IDs у різних батьків не змішуються; складений ключ не має колізій.
 - Усі `NSManagedObject` використовуються на черзі свого context. Потрібні relationships завантажені через `prefetching`, а не окремими fetch у циклі.
-- Зміна `.xcdatamodel` супроводжується Swift-оголошеннями Entity, маперами та unit/SQLite integration tests у застосунку. Для тестового прикладу пакета також оновіть скомпільовану `.momd` через `Scripts/update-test-model.sh`.
+- Зміна моделі Core Data у застосунку супроводжується Swift-оголошеннями Entity, кодом запису та SQLite integration tests. Після зміни тестової `.xcdatamodeld` цього пакета запустіть `Scripts/update-test-model.sh` і збережіть `.momd` разом із нею.

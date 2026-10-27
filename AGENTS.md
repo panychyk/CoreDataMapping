@@ -4,14 +4,15 @@
 
 - This Swift Package owns only `CoreDataEntityIdentity`, `CoreDataStorage`, and
   `CoreDataImporter` in `Sources/CoreDataMapping/`.
-- Keep `NSPersistentContainer`, store setup, model resources, migrations, DTOs,
-  concrete `NSManagedObject` subclasses, feature mappers, and repositories in
-  consuming applications. The copies under `Tests/CoreDataMappingTests/Example`
-  are test support only and must never be added to the library target.
+- Keep `NSPersistentContainer`, store setup, model resources, migrations,
+  concrete `NSManagedObject` subclasses, graph input values, and mapping rules in
+  consuming applications. The storage-only fixtures under
+  `Tests/CoreDataMappingTests/Fixtures` must never enter the library target.
 - Before changing the public API or persistence behavior, read `ARCHITECTURE.md`
   and `CORE_GUIDE.md`. Update both docs when their contracts or examples change.
-- Treat `Tests/CoreDataMappingTests/Example` as an integration example of a real
-  graph. SQLite and migration tests are integration tests run by `swift test`.
+- Treat `Tests/CoreDataMappingTests/Fixtures` as storage test support, without
+  repository, networking, decoding, or domain layers. SQLite and migration
+  tests are integration tests run by `swift test`.
 
 ## Invariants
 
@@ -30,10 +31,10 @@
 ## Verification
 
 - For each new capability, first state the relationship rule and add a test on
-  a small graph built with DTO factories; then change the package. See
+  a small graph built with `GraphCases`; then change the package. See
   `TESTING.md` for the test strategy.
 - Build the package with `swift build`.
 - Run `swift test`; the package test target covers identity, graph lifecycle,
   SQLite persistence, cancellation, migrations, and import batches.
-- After changing the example `.xcdatamodeld`, run
+- After changing `Resources/GraphModel.xcdatamodeld`, run
   `Scripts/update-test-model.sh` and commit the compiled `.momd` with it.

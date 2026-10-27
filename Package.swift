@@ -15,11 +15,8 @@ let package = Package(
         .testTarget(
             name: "CoreDataMappingTests",
             dependencies: ["CoreDataMapping"],
-            exclude: [
-                "Example/Data/Core/Persistence/PersistenceModel.xcdatamodeld",
-                "Resources/PersistenceModel.xcdatamodeld"
-            ],
-            resources: [.copy("Resources/PersistenceModel.momd")]
+            exclude: ["Resources/GraphModel.xcdatamodeld"],
+            resources: [.copy("Resources/GraphModel.momd")]
         )
     ],
     swiftLanguageModes: [.v5]
