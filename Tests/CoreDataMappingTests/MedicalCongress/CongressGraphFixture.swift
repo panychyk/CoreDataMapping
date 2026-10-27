@@ -71,7 +71,11 @@ struct RegistrationValue: Sendable {
     var checkInIDs: [Int64]
 }
 
-enum GraphCases {
+/// Builds the shared input graph for the MedicalCongress storage tests.
+/// Each call returns fresh values that a test can change for its own scenario.
+/// The graph reuses people, rooms, and resources across two events so tests can
+/// check both shared relationships and parent-owned children.
+enum CongressGraphFixture {
     static func congress() -> CongressGraph {
         CongressGraph(
             congress: .init(id: 100, title: "European Oncology Congress"),

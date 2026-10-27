@@ -20,9 +20,9 @@ struct CongressOwnedLifecycleTests {
     func participantSnapshot() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].appointments[0].participants = [
             .init(personID: 11, status: "confirmed"),
             .init(personID: 12, status: "arrived"),
@@ -36,9 +36,9 @@ struct CongressOwnedLifecycleTests {
     func appointmentSnapshot() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].appointments.remove(at: 0)
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -50,9 +50,9 @@ struct CongressOwnedLifecycleTests {
     func sessionSnapshot() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].tracks[0].sessions.removeAll()
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -64,9 +64,9 @@ struct CongressOwnedLifecycleTests {
     func registrationSnapshot() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].registrations.removeAll { $0.personID == 10 }
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -78,7 +78,7 @@ struct CongressOwnedLifecycleTests {
     func eventDeletion() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
         try await stack.importer.transaction { context in
             let request = NSFetchRequest<CongressEvent>(entityName: "CongressEvent")

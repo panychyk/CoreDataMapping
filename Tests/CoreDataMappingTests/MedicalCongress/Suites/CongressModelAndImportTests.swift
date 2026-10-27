@@ -27,14 +27,38 @@ struct CongressModelAndImportTests {
                 #expect(relationship.inverseRelationship?.inverseRelationship === relationship)
             }
         }
-        let event = try #require(model.entitiesByName["CongressEvent"])
-        #expect(event.relationshipsByName["tracks"]?.deleteRule == .cascadeDeleteRule)
-        #expect(event.relationshipsByName["appointments"]?.deleteRule == .cascadeDeleteRule)
-        let appointment = try #require(model.entitiesByName["Appointment"])
-        #expect(appointment.relationshipsByName["participants"]?.deleteRule == .cascadeDeleteRule)
-        let session = try #require(model.entitiesByName["Session"])
-        #expect(session.relationshipsByName["resources"]?.deleteRule == .nullifyDeleteRule)
-        #expect(session.relationshipsByName["room"]?.deleteRule == .nullifyDeleteRule)
+        let ownedRelationships: [(entity: String, name: String)] = [
+            ("Venue", "rooms"),
+            ("CongressEvent", "tracks"),
+            ("CongressEvent", "appointments"),
+            ("CongressEvent", "registrations"),
+            ("CongressEvent", "sponsors"),
+            ("Track", "sessions"),
+            ("Session", "speakers"),
+            ("Appointment", "participants"),
+            ("Registration", "checkIns"),
+        ]
+        for relationship in ownedRelationships {
+            let entity = try #require(model.entitiesByName[relationship.entity])
+            #expect(entity.relationshipsByName[relationship.name]?.deleteRule == .cascadeDeleteRule)
+        }
+
+        let sharedRelationships: [(entity: String, name: String)] = [
+            ("Congress", "events"),
+            ("Venue", "events"),
+            ("Session", "resources"),
+            ("Session", "room"),
+            ("Appointment", "room"),
+            ("Organization", "sponsorships"),
+            ("Person", "appointments"),
+            ("Person", "registrations"),
+            ("Person", "speakingRoles"),
+            ("ResourceAsset", "sessions"),
+        ]
+        for relationship in sharedRelationships {
+            let entity = try #require(model.entitiesByName[relationship.entity])
+            #expect(entity.relationshipsByName[relationship.name]?.deleteRule == .nullifyDeleteRule)
+        }
     }
 
     @Test("Batch lookup deduplicates global IDs and omits missing IDs")
@@ -69,7 +93,7 @@ struct CongressModelAndImportTests {
     func fullGraphSurvivesContextReset() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let graph = GraphCases.congress()
+        let graph = CongressGraphFixture.congress()
 
         try await stack.write(graph)
 

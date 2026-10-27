@@ -5,7 +5,7 @@
 - `Resources/MedicalCongressModel.xcdatamodeld` — схема Core Data; згенерована
   `.momd` зберігається поруч.
 - `Entities` — по одному `NSManagedObject` subclass на Entity.
-- `GraphCases.swift` — маленький граф: конгрес, дві події, три людини, дві
+- `CongressGraphFixture.swift` — маленький граф: конгрес, дві події, три людини, дві
   організації, дві кімнати, два матеріали, сесії та зустрічі.
 - `GraphWriter.swift` — тестовий mapper без мережі, decoding, repository чи
   domain-шару.

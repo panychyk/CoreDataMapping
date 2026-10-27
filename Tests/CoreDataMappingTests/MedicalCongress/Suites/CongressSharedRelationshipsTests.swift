@@ -15,9 +15,9 @@ struct CongressSharedRelationshipsTests {
     func sharedPerson() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].appointments[0].participants.removeAll { $0.personID == 10 }
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -30,9 +30,9 @@ struct CongressSharedRelationshipsTests {
     func sharedRoom() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].appointments[0].roomID = 21
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -44,9 +44,9 @@ struct CongressSharedRelationshipsTests {
     func sharedResource() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].tracks[0].sessions[0].resourceIDs = [31]
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)
@@ -58,9 +58,9 @@ struct CongressSharedRelationshipsTests {
     func sponsorSnapshot() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].sponsorIDs = []
         try await stack.write(graph)
         try GraphAssertions.matches(graph, in: stack)

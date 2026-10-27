@@ -17,7 +17,7 @@ fields і relationships; він не викликає `save`, `rollback` або 
 
 `Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.xcdatamodeld`
 містить тестову схему медичного конгресу з 15 Entity. `Entities` містить їхні
-`NSManagedObject` класи, `GraphCases` — невеликий зв’язний граф із двома подіями,
+`NSManagedObject` класи, `CongressGraphFixture` — невеликий зв’язний граф із двома подіями,
 а `GraphWriter` — правила запису. `CongressTestStack` завантажує скомпільовану
 модель у `NSInMemoryStoreType`. `GraphAssertions` перевіряє збережений граф і
 відсутність осиротілих owned-записів. Сценарії у `Suites` згруповані за

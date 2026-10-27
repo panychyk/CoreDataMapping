@@ -16,7 +16,7 @@ struct CongressImportHistoryTests {
     func sequentialImports() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let complete = GraphCases.congress()
+        let complete = CongressGraphFixture.congress()
         var first = complete
         first.events = [complete.events[0]]
         try await stack.write(first)
@@ -31,7 +31,7 @@ struct CongressImportHistoryTests {
     func repeatedImport() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
         let before = Set(try stack.fetch(Appointment.self).map { $0.objectID })
         try await stack.write(initial)
@@ -44,9 +44,9 @@ struct CongressImportHistoryTests {
     func isolatedUpdate() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let initial = GraphCases.congress()
+        let initial = CongressGraphFixture.congress()
         try await stack.write(initial)
-        var graph = GraphCases.congress()
+        var graph = CongressGraphFixture.congress()
         graph.events[0].title = "Research Day revised"
         graph.events[0].tracks[0].sessions[0].title = "Updated therapies"
         graph.events[0].appointments[0].participants[0].status = "arrived"
@@ -58,7 +58,7 @@ struct CongressImportHistoryTests {
     func multistageHistory() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let complete = GraphCases.congress()
+        let complete = CongressGraphFixture.congress()
 
         var first = complete
         first.events = [complete.events[0]]

@@ -6,28 +6,35 @@ import Testing
 enum GraphAssertions {
     static func matches(_ graph: CongressGraph, in stack: CongressTestStack) throws {
         stack.resetViewContext()
+        try matchesSharedEntities(graph, in: stack)
+        try matchesEvents(graph, in: stack)
+        try matchesOwnedChildren(graph, in: stack)
+    }
+
+    private static func matchesSharedEntities(
+        _ graph: CongressGraph, in stack: CongressTestStack
+    ) throws {
         let congresses = try stack.fetch(Congress.self)
         let organizations = try stack.fetch(Organization.self)
         let people = try stack.fetch(Person.self)
         let venues = try stack.fetch(Venue.self)
         let rooms = try stack.fetch(Room.self)
         let resources = try stack.fetch(ResourceAsset.self)
-        let events = try stack.fetch(CongressEvent.self)
 
         #expect(congresses.count == 1)
+        #expect(congresses.first?.id == graph.congress.id)
         #expect(congresses.first?.title == graph.congress.title)
         #expect(organizations.count == graph.organizations.count)
         #expect(people.count == graph.people.count)
         #expect(venues.count == 1)
         #expect(rooms.count == graph.rooms.count)
         #expect(resources.count == graph.resources.count)
-        #expect(events.count == graph.events.count)
 
         #expect(Set(organizations.map(\.id)) == Set(graph.organizations.map(\.id)))
         #expect(Set(people.map(\.id)) == Set(graph.people.map(\.id)))
         #expect(Set(rooms.map(\.id)) == Set(graph.rooms.map(\.id)))
         #expect(Set(resources.map(\.id)) == Set(graph.resources.map(\.id)))
-        #expect(Set(events.map(\.id)) == Set(graph.events.map(\.id)))
+        #expect(venues.first?.id == graph.venue.id)
         #expect(venues.first?.name == graph.venue.name)
 
         for organization in graph.organizations {
@@ -46,6 +53,14 @@ enum GraphAssertions {
         for resource in graph.resources {
             #expect(resources.first { $0.id == resource.id }?.title == resource.title)
         }
+    }
+
+    private static func matchesEvents(
+        _ graph: CongressGraph, in stack: CongressTestStack
+    ) throws {
+        let events = try stack.fetch(CongressEvent.self)
+        #expect(events.count == graph.events.count)
+        #expect(Set(events.map(\.id)) == Set(graph.events.map(\.id)))
 
         for snapshot in graph.events {
             let event = try #require(events.first { $0.id == snapshot.id })
@@ -55,14 +70,18 @@ enum GraphAssertions {
             let tracks = try CoreDataStorage.ordered(event.tracks, as: Track.self)
             #expect(tracks.map(\.localID) == snapshot.tracks.map(\.id))
             for (track, wanted) in zip(tracks, snapshot.tracks) {
+                #expect(track.title == wanted.title)
                 let sessions = try CoreDataStorage.ordered(track.sessions, as: Session.self)
                 #expect(sessions.map(\.localID) == wanted.sessions.map(\.id))
                 for (session, details) in zip(sessions, wanted.sessions) {
                     #expect(session.title == details.title)
                     #expect(session.room?.id == details.roomID)
-                    #expect(
-                        ids(session.speakers as? Set<SessionSpeaker>, \.localID)
-                            == Set(details.speakerIDs))
+                    let speakers = session.speakers?.allObjects as? [SessionSpeaker] ?? []
+                    #expect(speakers.count == details.speakerIDs.count)
+                    #expect(Set(speakers.map(\.localID)) == Set(details.speakerIDs))
+                    for speaker in speakers {
+                        #expect(speaker.person?.id == speaker.localID)
+                    }
                     #expect(
                         ids(session.resources as? Set<ResourceAsset>, \.id)
                             == Set(details.resourceIDs))
@@ -75,6 +94,7 @@ enum GraphAssertions {
                 #expect(appointment.room?.id == wanted.roomID)
                 let participants =
                     appointment.participants?.allObjects as? [AppointmentParticipant] ?? []
+                #expect(participants.count == wanted.participants.count)
                 #expect(
                     Set(participants.map(\.localID)) == Set(wanted.participants.map(\.personID)))
                 for participant in participants {
@@ -84,6 +104,7 @@ enum GraphAssertions {
                 }
             }
             let registrations = event.registrations?.allObjects as? [Registration] ?? []
+            #expect(registrations.count == snapshot.registrations.count)
             #expect(
                 Set(registrations.map(\.localID)) == Set(snapshot.registrations.map(\.personID)))
             for registration in registrations {
@@ -91,14 +112,22 @@ enum GraphAssertions {
                     snapshot.registrations.first { $0.personID == registration.localID })
                 #expect(registration.person?.id == expected.personID)
                 #expect(registration.status == expected.status)
-                #expect(
-                    Set((registration.checkIns?.allObjects as? [CheckIn] ?? []).map(\.localID))
-                        == Set(expected.checkInIDs))
+                let checkIns = registration.checkIns?.allObjects as? [CheckIn] ?? []
+                #expect(checkIns.count == expected.checkInIDs.count)
+                #expect(Set(checkIns.map(\.localID)) == Set(expected.checkInIDs))
             }
-            #expect(
-                ids(event.sponsors as? Set<EventSponsor>, \.localID) == Set(snapshot.sponsorIDs))
+            let sponsors = event.sponsors?.allObjects as? [EventSponsor] ?? []
+            #expect(sponsors.count == snapshot.sponsorIDs.count)
+            #expect(Set(sponsors.map(\.localID)) == Set(snapshot.sponsorIDs))
+            for sponsor in sponsors {
+                #expect(sponsor.organization?.id == sponsor.localID)
+            }
         }
+    }
 
+    private static func matchesOwnedChildren(
+        _ graph: CongressGraph, in stack: CongressTestStack
+    ) throws {
         #expect(try stack.count(Track.self) == graph.events.reduce(0) { $0 + $1.tracks.count })
         #expect(
             try stack.count(Session.self)

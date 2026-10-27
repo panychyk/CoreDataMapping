@@ -32,7 +32,7 @@
 ## Verification
 
 - For each new capability, first state the relationship rule and add a test on
-  a small graph built with `GraphCases`; then change the package. See
+  a small graph built with `CongressGraphFixture`; then change the package. See
   `TESTING.md` for the test strategy.
 - Build the package with `swift build`.
 - Run `swift test`; the package test target covers identity, graph lifecycle,

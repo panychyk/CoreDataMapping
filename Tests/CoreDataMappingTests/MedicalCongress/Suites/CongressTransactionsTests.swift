@@ -20,7 +20,7 @@ struct CongressTransactionsTests {
     func duplicateOwnedID() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let original = GraphCases.congress()
+        let original = CongressGraphFixture.congress()
         try await stack.write(original)
         var invalid = original
         invalid.events[0].appointments.append(invalid.events[0].appointments[0])
@@ -38,7 +38,7 @@ struct CongressTransactionsTests {
     func missingReference() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let original = GraphCases.congress()
+        let original = CongressGraphFixture.congress()
         try await stack.write(original)
 
         var invalid = original
@@ -54,7 +54,7 @@ struct CongressTransactionsTests {
         let stack = try CongressTestStack()
         try await stack.load()
         enum ExpectedFailure: Error { case secondBatch }
-        let full = GraphCases.congress()
+        let full = CongressGraphFixture.congress()
         var first = full
         first.events = [full.events[0]]
         var second = full
@@ -73,7 +73,7 @@ struct CongressTransactionsTests {
     func cancellationRollback() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let original = GraphCases.congress()
+        let original = CongressGraphFixture.congress()
         try await stack.write(original)
 
         var changed = original
@@ -115,7 +115,7 @@ struct CongressTransactionsTests {
     func concurrentImports() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let graph = GraphCases.congress()
+        let graph = CongressGraphFixture.congress()
         let importer = stack.importer
         try await withThrowingTaskGroup(of: Void.self) { group in
             for event in graph.events {
