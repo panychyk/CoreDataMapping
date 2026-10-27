@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24901" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Congress" representedClassName="Congress" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="events" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="congress" inverseEntity="CongressEvent"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="Organization" representedClassName="Organization" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="people" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Person" inverseName="organization" inverseEntity="Person"/>
+        <relationship name="sponsorships" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="EventSponsor" inverseName="organization" inverseEntity="EventSponsor"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="Person" representedClassName="Person" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="organization" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Organization" inverseName="people" inverseEntity="Organization"/>
+        <relationship name="appointments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="AppointmentParticipant" inverseName="person" inverseEntity="AppointmentParticipant"/>
+        <relationship name="registrations" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Registration" inverseName="person" inverseEntity="Registration"/>
+        <relationship name="speakingRoles" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SessionSpeaker" inverseName="person" inverseEntity="SessionSpeaker"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="Venue" representedClassName="Venue" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="rooms" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Room" inverseName="venue" inverseEntity="Room"/>
+        <relationship name="events" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="venue" inverseEntity="CongressEvent"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="Room" representedClassName="Room" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="venue" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Venue" inverseName="rooms" inverseEntity="Venue"/>
+        <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Session" inverseName="room" inverseEntity="Session"/>
+        <relationship name="appointments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Appointment" inverseName="room" inverseEntity="Appointment"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="ResourceAsset" representedClassName="ResourceAsset" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Session" inverseName="resources" inverseEntity="Session"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="CongressEvent" representedClassName="CongressEvent" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="congress" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Congress" inverseName="events" inverseEntity="Congress"/>
+        <relationship name="venue" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Venue" inverseName="events" inverseEntity="Venue"/>
+        <relationship name="tracks" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="Track" inverseName="event" inverseEntity="Track"/>
+        <relationship name="appointments" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="Appointment" inverseName="event" inverseEntity="Appointment"/>
+        <relationship name="registrations" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Registration" inverseName="event" inverseEntity="Registration"/>
+        <relationship name="sponsors" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="EventSponsor" inverseName="event" inverseEntity="EventSponsor"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="Track" representedClassName="Track" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="tracks" inverseEntity="CongressEvent"/>
+        <relationship name="sessions" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="Session" inverseName="track" inverseEntity="Session"/>
+    </entity>
+    <entity name="Session" representedClassName="Session" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Room" inverseName="sessions" inverseEntity="Room"/>
+        <relationship name="track" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Track" inverseName="sessions" inverseEntity="Track"/>
+        <relationship name="speakers" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SessionSpeaker" inverseName="session" inverseEntity="SessionSpeaker"/>
+        <relationship name="resources" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ResourceAsset" inverseName="sessions" inverseEntity="ResourceAsset"/>
+    </entity>
+    <entity name="Appointment" representedClassName="Appointment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Room" inverseName="appointments" inverseEntity="Room"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="appointments" inverseEntity="CongressEvent"/>
+        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="AppointmentParticipant" inverseName="appointment" inverseEntity="AppointmentParticipant"/>
+    </entity>
+    <entity name="AppointmentParticipant" representedClassName="AppointmentParticipant" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="appointment" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Appointment" inverseName="participants" inverseEntity="Appointment"/>
+        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="appointments" inverseEntity="Person"/>
+    </entity>
+    <entity name="Registration" representedClassName="Registration" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="registrations" inverseEntity="CongressEvent"/>
+        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="registrations" inverseEntity="Person"/>
+        <relationship name="checkIns" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CheckIn" inverseName="registration" inverseEntity="CheckIn"/>
+    </entity>
+    <entity name="CheckIn" representedClassName="CheckIn" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="registration" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Registration" inverseName="checkIns" inverseEntity="Registration"/>
+    </entity>
+    <entity name="EventSponsor" representedClassName="EventSponsor" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="organization" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Organization" inverseName="sponsorships" inverseEntity="Organization"/>
+        <relationship name="event" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CongressEvent" inverseName="sponsors" inverseEntity="CongressEvent"/>
+    </entity>
+    <entity name="SessionSpeaker" representedClassName="SessionSpeaker" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="speakingRoles" inverseEntity="Person"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Session" inverseName="speakers" inverseEntity="Session"/>
+    </entity>
+</model>

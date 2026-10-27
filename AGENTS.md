@@ -7,12 +7,13 @@
 - Keep `NSPersistentContainer`, store setup, model resources, migrations,
   concrete `NSManagedObject` subclasses, graph input values, and mapping rules in
   consuming applications. The storage-only fixtures under
-  `Tests/CoreDataMappingTests/Fixtures` must never enter the library target.
+  `Tests/CoreDataMappingTests/MedicalCongress` must never enter the library target.
 - Before changing the public API or persistence behavior, read `ARCHITECTURE.md`
   and `CORE_GUIDE.md`. Update both docs when their contracts or examples change.
-- Treat `Tests/CoreDataMappingTests/Fixtures` as storage test support, without
-  repository, networking, decoding, or domain layers. SQLite and migration
-  tests are integration tests run by `swift test`.
+- Treat `Tests/CoreDataMappingTests/MedicalCongress` as storage test support,
+  without repository, networking, decoding, or domain layers. Its current tests
+  use an in-memory store; SQLite reopening and migration require separate
+  disk-backed integration tests when that coverage is requested.
 
 ## Invariants
 
@@ -35,7 +36,7 @@
   `TESTING.md` for the test strategy.
 - Build the package with `swift build`.
 - Run `swift test`; the package test target covers identity, graph lifecycle,
-  SQLite persistence, cancellation, migrations, and import batches.
-- After changing `Tests/CoreDataMappingTests/Resources/GraphModel.xcdatamodeld`,
+  cancellation, concurrent imports, and import batches.
+- After changing `Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.xcdatamodeld`,
   run `./Scripts/update-test-model.sh` from the package root and commit the
-  generated `Tests/CoreDataMappingTests/Resources/GraphModel.momd` with it.
+  generated `Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.momd` with it.

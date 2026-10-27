@@ -2,12 +2,11 @@
 
 Це посібник із використання `CoreDataMapping` у застосунку. Почніть із [README](README.md); інваріанти пакета й межі його відповідальності описані в [ARCHITECTURE.md](ARCHITECTURE.md). Назви вхідних snapshots та Entity у фрагментах коду — приклади; конкретні типи визначає споживач пакета.
 
-Компактний приклад із п’ятьма незалежними root Entity (`Document`, `Folder`,
-`Dashboard`, `Board`, `Workspace`) та спільним `Resource` є у
-`Tests/CoreDataMappingTests/Fixtures/GraphWriter.swift`; перевірки збережених
-Entity — у `Fixtures/GraphAssertions.swift`, сценарії — у `GraphLifecycleTests.swift`
-та `GraphConcurrencyTests.swift`. Таблиця relationships — у
-[TESTING.md](TESTING.md). Усе це один test target.
+Приклад із медичним конгресом, двома подіями та спільними людьми, кімнатами й
+матеріалами є у `Tests/CoreDataMappingTests/MedicalCongress/GraphWriter.swift`.
+Перевірки збережених Entity — у `MedicalCongress/GraphAssertions.swift`, окремі
+сценарії — у `MedicalCongress/Cases`. Таблиця relationships — у
+[TESTING.md](TESTING.md). Усе це один test target з in-memory store.
 
 ## 1. Що робить core
 

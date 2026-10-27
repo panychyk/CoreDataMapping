@@ -15,8 +15,8 @@ let package = Package(
         .testTarget(
             name: "CoreDataMappingTests",
             dependencies: ["CoreDataMapping"],
-            exclude: ["Resources/GraphModel.xcdatamodeld"],
-            resources: [.copy("Resources/GraphModel.momd")]
+            exclude: ["MedicalCongress/Resources/MedicalCongressModel.xcdatamodeld"],
+            resources: [.copy("MedicalCongress/Resources/MedicalCongressModel.momd")]
         )
     ],
     swiftLanguageModes: [.v5]

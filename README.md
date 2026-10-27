@@ -21,13 +21,12 @@ try await importer.write(dtos) { batch, storage in
 Модель Core Data, `NSManagedObject` subclasses і правила побудови графа визначає
 споживач пакета.
 
-`Tests/CoreDataMappingTests/Resources/GraphModel.xcdatamodeld` містить модель із
-п’ятьма незалежними root Entity. Їхні `NSManagedObject` класи та код запису — у
-`Fixtures`; `CoreDataTestStack.swift` завантажує `.momd` і створює in-memory або
-SQLite store. Три тестові файли
-перевіряють зв’язки, великі й паралельні імпорти, SQLite, міграцію, rollback,
-cancellation, дублікати та осиротілі owned-записи. Тестова схема не входить у
-library product.
+`Tests/CoreDataMappingTests/MedicalCongress` містить тестову систему медичних
+конгресів: модель `MedicalCongressModel.xcdatamodeld`, класи в `Entities`,
+сценарії в `Cases` і код запису графа. Кожен сценарій має окремий файл і test
+suite. Тести використовують `NSInMemoryStoreType` та перевіряють спільні й
+дочірні зв’язки, кілька імпортів, rollback і cancellation. Тестова схема не
+входить у library product.
 
 - [Практичний посібник](CORE_GUIDE.md): API, identity, relationships, ownership,
   delete rules і складені ключі.
