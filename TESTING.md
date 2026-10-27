@@ -6,12 +6,14 @@
 `Tests/CoreDataMappingTests/Example` містить перенесені DTO, domain-моделі,
 Entity, мапери, repositories і тестовий API client. Усі вони компілюються в
 test target; застосунку для запуску тестів більше не потрібно.
+Це інтеграційний приклад реального графа. З часом його можна скоротити, але
+варто зберегти показові зв’язки shared, owned, ordered і складений ID.
 
 Схема лежить у `Tests/CoreDataMappingTests/Resources/PersistenceModel.xcdatamodeld`.
 SwiftPM CLI копіює `.xcdatamodeld` як ресурс, тому тестовий `CoreDataStack`
 завантажує скомпільовану `PersistenceModel.momd` із `Bundle.module`. Після
 редагування схеми запустіть `Scripts/update-test-model.sh` і збережіть обидві
-версії моделі. `swift test` запускає також SQLite та migration-тести.
+версії моделі. `swift test` запускає також інтеграційні SQLite та migration-тести.
 
 ## Як описувати relationship
 
@@ -37,6 +39,10 @@ rule **для кожного напрямку**. У Swift Entity оголосі�
 `upsert → link → reconcile` є в [CORE_GUIDE.md](CORE_GUIDE.md).
 
 ## Які тести писати
+
+Нову можливість починайте з правила конкретного зв’язку: визначте identity,
+ownership, порядок і семантику відсутнього поля. Перевірте правило тестом на
+малому графі з DTO-фабрики, а потім змінюйте універсальний код пакета.
 
 1. **Контракт DTO:** короткий JSON лише для формату, який задає сервер: назви
    ключів, enum raw values, nullable поля, дати й envelope. Зразки є в

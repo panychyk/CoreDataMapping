@@ -10,6 +10,8 @@
   are test support only and must never be added to the library target.
 - Before changing the public API or persistence behavior, read `ARCHITECTURE.md`
   and `CORE_GUIDE.md`. Update both docs when their contracts or examples change.
+- Treat `Tests/CoreDataMappingTests/Example` as an integration example of a real
+  graph. SQLite and migration tests are integration tests run by `swift test`.
 
 ## Invariants
 
@@ -27,6 +29,9 @@
 
 ## Verification
 
+- For each new capability, first state the relationship rule and add a test on
+  a small graph built with DTO factories; then change the package. See
+  `TESTING.md` for the test strategy.
 - Build the package with `swift build`.
 - Run `swift test`; the package test target covers identity, graph lifecycle,
   SQLite persistence, cancellation, migrations, and import batches.
