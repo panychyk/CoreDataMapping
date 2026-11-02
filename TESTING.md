@@ -14,7 +14,9 @@
 
 `Integration/Suites/SQLiteReopenTests.swift` перевіряє повний граф конгресу
 після відкриття store новим container, а також оновлення замовлення маркетплейсу
-після двох послідовних відкриттів. Кожен тест має власний файл SQLite.
+після двох послідовних відкриттів. Він також перевіряє конгрес після скасування
+другої порції, наступного успішного запису й нового відкриття. Кожен тест має
+власний файл SQLite.
 
 ## MedicalCongress
 
@@ -45,6 +47,7 @@
 | `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
 | `CongressTransactionsTests` | Rollback помилкового або скасованого batch, відкат після помилки Core Data під час save з успішним повтором, заборона mutation під час read і серіалізація конкурентних імпортів. |
 | `CongressImporterContractTests` | Серіалізація багатопорційних write/read, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
+| `CongressControlledConcurrencyTests` | Керовані бар’єрами два snapshots однієї події з читанням через окремий context; перекриття записів двох подій, rollback другого та успішний повтор. |
 | `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
 | `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |
 | `CongressFetchPerformanceTests` | Кількість fetch-запитів при повторному імпорті не зростає зі збільшенням числа подій та owned-дітей. |

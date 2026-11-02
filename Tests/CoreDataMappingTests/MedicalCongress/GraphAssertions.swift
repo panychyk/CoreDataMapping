@@ -9,6 +9,7 @@ enum GraphAssertions {
         try matchesSharedEntities(graph, in: stack)
         try matchesEvents(graph, in: stack)
         try matchesOwnedChildren(graph, in: stack)
+        try auditIdentitiesAndRelationships(in: stack)
     }
 
     private static func matchesSharedEntities(
@@ -183,5 +184,118 @@ enum GraphAssertions {
         _ values: Set<Entity>?, _ keyPath: KeyPath<Entity, Int64>
     ) -> Set<Int64> {
         Set((values ?? []).map { $0[keyPath: keyPath] })
+    }
+
+    private struct OwnedKey: Hashable {
+        let owner: NSManagedObjectID
+        let localID: Int64
+    }
+
+    private static func auditIdentitiesAndRelationships(in stack: CongressTestStack) throws {
+        let congresses = try stack.fetch(Congress.self)
+        let organizations = try stack.fetch(Organization.self)
+        let people = try stack.fetch(Person.self)
+        let venues = try stack.fetch(Venue.self)
+        let rooms = try stack.fetch(Room.self)
+        let resources = try stack.fetch(ResourceAsset.self)
+        let events = try stack.fetch(CongressEvent.self)
+        let tracks = try stack.fetch(Track.self)
+        let sessions = try stack.fetch(Session.self)
+        let speakers = try stack.fetch(SessionSpeaker.self)
+        let appointments = try stack.fetch(Appointment.self)
+        let participants = try stack.fetch(AppointmentParticipant.self)
+        let registrations = try stack.fetch(Registration.self)
+        let checkIns = try stack.fetch(CheckIn.self)
+        let sponsors = try stack.fetch(EventSponsor.self)
+
+        uniqueGlobal(congresses, id: \.id)
+        uniqueGlobal(organizations, id: \.id)
+        uniqueGlobal(people, id: \.id)
+        uniqueGlobal(venues, id: \.id)
+        uniqueGlobal(rooms, id: \.id)
+        uniqueGlobal(resources, id: \.id)
+        uniqueGlobal(events, id: \.id)
+
+        uniqueOwned(tracks, owner: \.event, id: \.localID)
+        uniqueOwned(sessions, owner: \.track, id: \.localID)
+        uniqueOwned(speakers, owner: \.session, id: \.localID)
+        uniqueOwned(appointments, owner: \.event, id: \.localID)
+        uniqueOwned(participants, owner: \.appointment, id: \.localID)
+        uniqueOwned(registrations, owner: \.event, id: \.localID)
+        uniqueOwned(checkIns, owner: \.registration, id: \.localID)
+        uniqueOwned(sponsors, owner: \.event, id: \.localID)
+
+        for congress in congresses {
+            #expect(relationshipIDs(congress.events) == objectIDs(events.filter {
+                $0.congress === congress
+            }))
+        }
+        for venue in venues {
+            #expect(relationshipIDs(venue.rooms) == objectIDs(rooms.filter {
+                $0.venue === venue
+            }))
+            #expect(relationshipIDs(venue.events) == objectIDs(events.filter {
+                $0.venue === venue
+            }))
+        }
+        for organization in organizations {
+            #expect(relationshipIDs(organization.people) == objectIDs(people.filter {
+                $0.organization === organization
+            }))
+            #expect(relationshipIDs(organization.sponsorships) == objectIDs(sponsors.filter {
+                $0.organization === organization
+            }))
+        }
+        for person in people {
+            #expect(relationshipIDs(person.speakingRoles) == objectIDs(speakers.filter {
+                $0.person === person
+            }))
+            #expect(relationshipIDs(person.appointments) == objectIDs(participants.filter {
+                $0.person === person
+            }))
+            #expect(relationshipIDs(person.registrations) == objectIDs(registrations.filter {
+                $0.person === person
+            }))
+        }
+        for room in rooms {
+            #expect(relationshipIDs(room.sessions) == objectIDs(sessions.filter {
+                $0.room === room
+            }))
+            #expect(relationshipIDs(room.appointments) == objectIDs(appointments.filter {
+                $0.room === room
+            }))
+        }
+        for resource in resources {
+            #expect(relationshipIDs(resource.sessions) == objectIDs(sessions.filter {
+                relationshipIDs($0.resources).contains(resource.objectID)
+            }))
+        }
+    }
+
+    private static func uniqueGlobal<Entity: NSManagedObject>(
+        _ values: [Entity], id: KeyPath<Entity, Int64>
+    ) {
+        #expect(Set(values.map { $0[keyPath: id] }).count == values.count)
+    }
+
+    private static func uniqueOwned<Entity: NSManagedObject, Owner: NSManagedObject>(
+        _ values: [Entity], owner: KeyPath<Entity, Owner?>, id: KeyPath<Entity, Int64>
+    ) {
+        let keys = values.compactMap { value -> OwnedKey? in
+            guard let parent = value[keyPath: owner] else { return nil }
+            return OwnedKey(owner: parent.objectID, localID: value[keyPath: id])
+        }
+        #expect(keys.count == values.count)
+        #expect(Set(keys).count == keys.count)
+    }
+
+    private static func objectIDs<Entity: NSManagedObject>(
+        _ values: [Entity]
+    ) -> Set<NSManagedObjectID> {
+        Set(values.map(\.objectID))
+    }
+
+    private static func relationshipIDs(_ values: NSSet?) -> Set<NSManagedObjectID> {
+        Set((values?.allObjects ?? []).compactMap { ($0 as? NSManagedObject)?.objectID })
     }
 }
