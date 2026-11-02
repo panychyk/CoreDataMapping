@@ -39,6 +39,7 @@
 | `CongressSharedRelationshipsTests` | Зміна зв’язків із людьми, кімнатами, матеріалами й організаціями без втрати їхнього іншого використання. |
 | `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
 | `CongressTransactionsTests` | Rollback помилкового або скасованого batch, заборона mutation під час read і серіалізація конкурентних імпортів. |
+| `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
 
 ## Marketplace
 
