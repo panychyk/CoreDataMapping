@@ -179,4 +179,168 @@
         <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketProduct" inverseName="reviews" inverseEntity="MarketProduct"/>
         <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
     </entity>
+    <entity name="UniFaculty" representedClassName="UniFaculty" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="programs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniProgram" inverseName="faculty" inverseEntity="UniProgram"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniProgram" representedClassName="UniProgram" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="faculty" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniFaculty" inverseName="programs" inverseEntity="UniFaculty"/>
+        <relationship name="courses" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniCourse" inverseName="program" inverseEntity="UniCourse"/>
+        <relationship name="groups" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniGroup" inverseName="program" inverseEntity="UniGroup"/>
+        <relationship name="students" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniStudent" inverseName="program" inverseEntity="UniStudent"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniGroup" representedClassName="UniGroup" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="program" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniProgram" inverseName="groups" inverseEntity="UniProgram"/>
+        <relationship name="students" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniStudent" inverseName="group" inverseEntity="UniStudent"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniStudent" representedClassName="UniStudent" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="program" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniProgram" inverseName="students" inverseEntity="UniProgram"/>
+        <relationship name="group" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniGroup" inverseName="students" inverseEntity="UniGroup"/>
+        <relationship name="enrollments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniEnrollment" inverseName="student" inverseEntity="UniEnrollment"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniTeacher" representedClassName="UniTeacher" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="offerings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="teacher" inverseEntity="UniOffering"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniRoom" representedClassName="UniRoom" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="offerings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="room" inverseEntity="UniOffering"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniCourse" representedClassName="UniCourse" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="program" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniProgram" inverseName="courses" inverseEntity="UniProgram"/>
+        <relationship name="offerings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="course" inverseEntity="UniOffering"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniSemester" representedClassName="UniSemester" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="label" optional="YES" attributeType="String"/>
+        <relationship name="offerings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="semester" inverseEntity="UniOffering"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniOffering" representedClassName="UniOffering" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="course" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniCourse" inverseName="offerings" inverseEntity="UniCourse"/>
+        <relationship name="semester" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniSemester" inverseName="offerings" inverseEntity="UniSemester"/>
+        <relationship name="teacher" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniTeacher" inverseName="offerings" inverseEntity="UniTeacher"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniRoom" inverseName="offerings" inverseEntity="UniRoom"/>
+        <relationship name="enrollments" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="UniEnrollment" inverseName="offering" inverseEntity="UniEnrollment"/>
+        <relationship name="assignments" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="UniAssignment" inverseName="offering" inverseEntity="UniAssignment"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="UniEnrollment" representedClassName="UniEnrollment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="offering" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="enrollments" inverseEntity="UniOffering"/>
+        <relationship name="student" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniStudent" inverseName="enrollments" inverseEntity="UniStudent"/>
+        <relationship name="grades" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="UniGrade" inverseName="enrollment" inverseEntity="UniGrade"/>
+    </entity>
+    <entity name="UniAssignment" representedClassName="UniAssignment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="offering" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniOffering" inverseName="assignments" inverseEntity="UniOffering"/>
+        <relationship name="grades" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="UniGrade" inverseName="assignment" inverseEntity="UniGrade"/>
+    </entity>
+    <entity name="UniGrade" representedClassName="UniGrade" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="score" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="enrollment" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniEnrollment" inverseName="grades" inverseEntity="UniEnrollment"/>
+        <relationship name="assignment" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UniAssignment" inverseName="grades" inverseEntity="UniAssignment"/>
+    </entity>
+    <entity name="TravelTraveler" representedClassName="TravelTraveler" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="trips" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelTrip" inverseName="traveler" inverseEntity="TravelTrip"/>
+        <relationship name="loyalty" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelLoyalty" inverseName="travelers" inverseEntity="TravelLoyalty"/>
+        <relationship name="guestStays" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelGuest" inverseName="traveler" inverseEntity="TravelGuest"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelTrip" representedClassName="TravelTrip" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="traveler" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelTraveler" inverseName="trips" inverseEntity="TravelTraveler"/>
+        <relationship name="bookings" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="TravelBooking" inverseName="trip" inverseEntity="TravelBooking"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelBooking" representedClassName="TravelBooking" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="kind" optional="YES" attributeType="String"/>
+        <relationship name="trip" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelTrip" inverseName="bookings" inverseEntity="TravelTrip"/>
+        <relationship name="flight" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelFlight" inverseName="bookings" inverseEntity="TravelFlight"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelRoom" inverseName="bookings" inverseEntity="TravelRoom"/>
+        <relationship name="guests" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="TravelGuest" inverseName="booking" inverseEntity="TravelGuest"/>
+        <relationship name="payments" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="TravelPayment" inverseName="booking" inverseEntity="TravelPayment"/>
+        <relationship name="tickets" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="TravelTicket" inverseName="booking" inverseEntity="TravelTicket"/>
+    </entity>
+    <entity name="TravelFlight" representedClassName="TravelFlight" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="code" optional="YES" attributeType="String"/>
+        <relationship name="origin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelAirport" inverseName="departures" inverseEntity="TravelAirport"/>
+        <relationship name="destination" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelAirport" inverseName="arrivals" inverseEntity="TravelAirport"/>
+        <relationship name="bookings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelBooking" inverseName="flight" inverseEntity="TravelBooking"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelAirport" representedClassName="TravelAirport" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="code" optional="YES" attributeType="String"/>
+        <relationship name="departures" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelFlight" inverseName="origin" inverseEntity="TravelFlight"/>
+        <relationship name="arrivals" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelFlight" inverseName="destination" inverseEntity="TravelFlight"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelHotel" representedClassName="TravelHotel" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="rooms" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelRoom" inverseName="hotel" inverseEntity="TravelRoom"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelRoom" representedClassName="TravelRoom" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="number" optional="YES" attributeType="String"/>
+        <relationship name="hotel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelHotel" inverseName="rooms" inverseEntity="TravelHotel"/>
+        <relationship name="bookings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelBooking" inverseName="room" inverseEntity="TravelBooking"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="TravelGuest" representedClassName="TravelGuest" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="booking" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelBooking" inverseName="guests" inverseEntity="TravelBooking"/>
+        <relationship name="traveler" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelTraveler" inverseName="guestStays" inverseEntity="TravelTraveler"/>
+        <relationship name="tickets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelTicket" inverseName="guest" inverseEntity="TravelTicket"/>
+    </entity>
+    <entity name="TravelPayment" representedClassName="TravelPayment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="amount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="booking" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelBooking" inverseName="payments" inverseEntity="TravelBooking"/>
+    </entity>
+    <entity name="TravelTicket" representedClassName="TravelTicket" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="seat" optional="YES" attributeType="String"/>
+        <relationship name="booking" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelBooking" inverseName="tickets" inverseEntity="TravelBooking"/>
+        <relationship name="guest" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TravelGuest" inverseName="tickets" inverseEntity="TravelGuest"/>
+    </entity>
+    <entity name="TravelLoyalty" representedClassName="TravelLoyalty" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="travelers" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TravelTraveler" inverseName="loyalty" inverseEntity="TravelTraveler"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
 </model>

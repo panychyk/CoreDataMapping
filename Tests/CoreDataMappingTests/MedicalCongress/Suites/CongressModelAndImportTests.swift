@@ -21,7 +21,7 @@ struct CongressModelAndImportTests {
                 forResource: "TestModel", withExtension: "momd"
             ))
         let model = try #require(NSManagedObjectModel(contentsOf: url))
-        #expect(model.entities.count == 26)
+        #expect(model.entities.count == 49)
         for entity in model.entities {
             for relationship in entity.relationshipsByName.values {
                 #expect(relationship.inverseRelationship?.inverseRelationship === relationship)

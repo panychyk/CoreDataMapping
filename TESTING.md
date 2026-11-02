@@ -7,7 +7,7 @@
 ## Спільна інфраструктура
 
 `Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна Core Data
-модель для обох систем. Скомпільована `TestModel.momd` лежить поруч і входить
+модель для чотирьох систем. Скомпільована `TestModel.momd` лежить поруч і входить
 лише до test target. `Support/TestStack.swift` завантажує модель у
 `NSInMemoryStoreType`; кожен тест зі збереженням даних створює власний store.
 
@@ -69,6 +69,51 @@ reviews мають identity `id`. `localID` позицій, платежів і 
 | `MarketplaceSharedRelationshipsTests` | Зміна категорій і залишку зі збереженням спільних зв’язків. |
 | `MarketplaceOwnedLifecycleTests` | Вилучення платежу, доставки та замовлення з очищенням лише його дітей. |
 | `MarketplaceTransactionsTests` | Rollback після дубльованого локального ID або відсутнього товару. |
+
+## University
+
+`University/Entities/` містить 12 класів Entity. Поруч лежать
+`UniversityGraphFixture.swift`, `UniversityGraphWriter.swift`,
+`UniversityGraphAssertions.swift`, `UniversityTestStack.swift` і `Suites/`.
+Мала фікстура має два факультети, дві програми, три групи, три студенти,
+два курси і три проведення. Курс Algorithms проводиться у двох семестрах;
+студент Ada записаний на три проведення. Локальні ID записів, завдань і
+оцінок повторюються в різних власників.
+
+| Зв’язок | Правило |
+|---|---|
+| `Faculty → Program → Course / Group / Student` | Довідникові Entity мають глобальний `id`; зв’язки з факультетом і програмою розриваються без каскадного видалення. Студент належить одній групі, але може мати багато записів. |
+| `Course / Semester / Teacher / Room → Offering` | Проведення має глобальний `id`. Курс, семестр, викладач і аудиторія спільні; видалення проведення їх не видаляє. |
+| `Offering → Assignment / Enrollment` | Проведення володіє завданнями й записами, локальний `localID` унікальний у його межах. Повний snapshot узгоджує лише дітей конкретного проведення. |
+| `Enrollment → Grade → Assignment` | Запис володіє оцінками з локальним `localID`; оцінка посилається тільки на завдання того самого проведення. Повний snapshot видаляє відсутні оцінки. |
+
+| Suite | Сценарій |
+|---|---|
+| `UniversityModelAndImportTests` | Inverse, delete rules, identity constraints і перший запис повного графа. |
+| `UniversityImportHistoryTests` | Послідовні імпорти, повторне використання objectID і незалежне оновлення проведення. |
+| `UniversityRelationshipsAndLifecycleTests` | Переміщення спільних посилань, reconciliation дітей і каскадне видалення проведення. |
+| `UniversityTransactionsTests` | Rollback дубльованих ID, хибних посилань, повторного запису студента та збереження попереднього batch. |
+
+## TravelBooking
+
+`TravelBooking/Entities/` містить 11 класів Entity. `TravelGraphFixture.swift`
+описує три поїздки двох напрямків: два мандрівники користуються тим самим
+рейсом і номером, третій має інший маршрут. У різних поїздках і бронюваннях
+повторюються локальні ID бронювань, гостей, платежів і квитків.
+
+| Зв’язок | Правило |
+|---|---|
+| `Traveler → Trip` | Мандрівник є спільним записом із глобальним `id`; поїздка має окремий глобальний `id`. Видалення мандрівника не видаляє поїздки. |
+| `Trip → Booking → Guest / Payment / Ticket` | Поїздка володіє бронюваннями, а бронювання — дочірніми записами. Повний snapshot узгоджує їх за `localID` лише в межах власника; видалення каскадне. |
+| `Booking → Flight / Room` | Бронювання посилається рівно на один із цих спільних записів. Зміна маршруту або скасування не видаляє рейс чи номер. |
+| `Flight → Airport`, `Room → Hotel`, `Traveler → Loyalty` | Глобальні довідникові записи зберігаються при зміні membership; аеропорт може бути і пунктом прибуття, і пунктом відправлення. |
+| `Ticket → Guest` | Квиток посилається лише на гостя того самого бронювання; місце унікальне в межах бронювання. |
+
+| Suite | Сценарій |
+|---|---|
+| `TravelModelAndImportTests` | Inverse, delete rules, повний граф і повторне використання рейсу та номера. |
+| `TravelHistoryAndLifecycleTests` | Окремі batch, повторний імпорт зі сталими objectID, перебронювання, зміна спільного каталогу, reconciliation та каскадне видалення. |
+| `TravelTransactionsTests` | Відкат дубльованого платежу, місця, хибного гостя квитка, некоректного типу бронювання й пізнішого batch. |
 
 ## Перевірка
 
