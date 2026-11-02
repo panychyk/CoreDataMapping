@@ -41,6 +41,7 @@
 | `CongressTransactionsTests` | Rollback помилкового або скасованого batch, заборона mutation під час read і серіалізація конкурентних імпортів. |
 | `CongressImporterContractTests` | Серіалізація багатопорційних write/read, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
 | `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
+| `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |
 
 ## Marketplace
 
