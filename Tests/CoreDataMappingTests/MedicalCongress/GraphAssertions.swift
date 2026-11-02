@@ -68,10 +68,14 @@ enum GraphAssertions {
             #expect(event.title == snapshot.title)
             #expect(event.congress?.id == graph.congress.id)
             #expect(event.venue?.id == graph.venue.id)
+            let rawTracks = try #require((event.tracks?.array ?? []) as? [Track])
+            #expect(rawTracks.map(\.localID) == snapshot.tracks.map(\.id))
             let tracks = try CoreDataStorage.ordered(event.tracks, as: Track.self)
             #expect(tracks.map(\.localID) == snapshot.tracks.map(\.id))
             for (track, wanted) in zip(tracks, snapshot.tracks) {
                 #expect(track.title == wanted.title)
+                let rawSessions = try #require((track.sessions?.array ?? []) as? [Session])
+                #expect(rawSessions.map(\.localID) == wanted.sessions.map(\.id))
                 let sessions = try CoreDataStorage.ordered(track.sessions, as: Session.self)
                 #expect(sessions.map(\.localID) == wanted.sessions.map(\.id))
                 for (session, details) in zip(sessions, wanted.sessions) {
@@ -88,6 +92,8 @@ enum GraphAssertions {
                             == Set(details.resourceIDs))
                 }
             }
+            let rawAppointments = try #require((event.appointments?.array ?? []) as? [Appointment])
+            #expect(rawAppointments.map(\.localID) == snapshot.appointments.map(\.id))
             let appointments = try CoreDataStorage.ordered(event.appointments, as: Appointment.self)
             #expect(appointments.map(\.localID) == snapshot.appointments.map(\.id))
             for (appointment, wanted) in zip(appointments, snapshot.appointments) {

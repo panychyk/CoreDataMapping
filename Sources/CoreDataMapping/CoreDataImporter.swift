@@ -14,8 +14,25 @@ public nonisolated final class CoreDataImporter: @unchecked Sendable {
     public static let defaultBatchSize = 500
 
     private let context: NSManagedObjectContext
+    private let onOperationEnqueued: (@Sendable () -> Void)?
 
     public init(context: NSManagedObjectContext) {
+        Self.validate(context)
+        self.context = context
+        self.onOperationEnqueued = nil
+    }
+
+    // Lets contract tests observe actual queue admission without exposing a public hook.
+    internal init(
+        context: NSManagedObjectContext,
+        onOperationEnqueued: @escaping @Sendable () -> Void
+    ) {
+        Self.validate(context)
+        self.context = context
+        self.onOperationEnqueued = onOperationEnqueued
+    }
+
+    private static func validate(_ context: NSManagedObjectContext) {
         context.performAndWait {
             precondition(
                 context.concurrencyType == .privateQueueConcurrencyType,
@@ -26,7 +43,6 @@ public nonisolated final class CoreDataImporter: @unchecked Sendable {
                 "CoreDataImporter requires a context connected directly to a store coordinator"
             )
         }
-        self.context = context
     }
 
     /// Commits complete graphs in bounded root batches. A failed or cancelled
@@ -109,17 +125,22 @@ public nonisolated final class CoreDataImporter: @unchecked Sendable {
         let cancellation = OSAllocatedUnfairLock(initialState: false)
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
-            return try await context.perform(schedule: .enqueued) { [context] in
-                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                context.undoManager = nil
-                defer { context.reset() }
-                do {
-                    try Self.checkCancellation(cancellation)
-                    return try operation(context, cancellation)
-                } catch {
-                    context.rollback()
-                    throw error
+            return try await withCheckedThrowingContinuation { continuation in
+                context.perform { [context] in
+                    context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                    context.undoManager = nil
+                    let result: Result<Value, Error>
+                    do {
+                        try Self.checkCancellation(cancellation)
+                        result = .success(try operation(context, cancellation))
+                    } catch {
+                        context.rollback()
+                        result = .failure(error)
+                    }
+                    context.reset()
+                    continuation.resume(with: result)
                 }
+                onOperationEnqueued?()
             }
         } onCancel: {
             cancellation.withLock { $0 = true }

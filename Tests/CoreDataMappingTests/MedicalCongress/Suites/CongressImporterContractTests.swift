@@ -1,4 +1,4 @@
-import CoreDataMapping
+@testable import CoreDataMapping
 import Foundation
 import os
 import Testing
@@ -7,8 +7,8 @@ import Testing
 /// Порції одного виклику не перемішуються з іншим, а transaction зберігає
 /// або відкочує зміни цілком.
 ///
-/// - `writeAndReadDoNotInterleave`: read бачить усі порції конкурентного write.
-/// - `concurrentWritesDoNotInterleave`: порції двох write лишаються суцільними.
+/// - `writeAndReadDoNotInterleave`: queued read бачить усі порції write.
+/// - `concurrentWritesDoNotInterleave`: queued write чекає всіх порцій першого.
 /// - `readPreservesBatchOrder`: read накопичує результати в порядку вхідних ID.
 /// - `transactionCommits`: transaction зберігає результат для нового контексту.
 /// - `transactionRollsBack`: помилка відкочує зміни й не псує наступний виклик.
@@ -21,10 +21,13 @@ struct CongressImporterContractTests {
     func writeAndReadDoNotInterleave() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let importer = stack.importer
+        let operationEnqueued = DispatchSemaphore(value: 0)
+        let importer = CoreDataImporter(
+            context: stack.container.newBackgroundContext(),
+            onOperationEnqueued: { operationEnqueued.signal() }
+        )
         let firstMapped = DispatchSemaphore(value: 0)
         let releaseWriter = DispatchSemaphore(value: 0)
-        let readerStarted = DispatchSemaphore(value: 0)
         let trace = OSAllocatedUnfairLock(initialState: [String]())
         defer { releaseWriter.signal() }
 
@@ -43,17 +46,16 @@ struct CongressImporterContractTests {
             }
         }
         try #require(await waitForSignal(firstMapped))
+        try #require(await waitForSignal(operationEnqueued))
 
         let reader = Task {
-            readerStarted.signal()
             return try await importer.read([Int64(1), 2, 3], batchSize: 1) { ids, storage in
                 trace.withLock { $0.append("read \(ids[0])") }
                 let found = try storage.existing(ids: ids, identifiedBy: ResourceAsset.identity)
                 return ids.compactMap { found[$0]?.title }
             }
         }
-        try #require(await waitForSignal(readerStarted))
-        await Task.yield()
+        try #require(await waitForSignal(operationEnqueued))
         releaseWriter.signal()
 
         try await writer.value
@@ -70,10 +72,13 @@ struct CongressImporterContractTests {
     func concurrentWritesDoNotInterleave() async throws {
         let stack = try CongressTestStack()
         try await stack.load()
-        let importer = stack.importer
+        let operationEnqueued = DispatchSemaphore(value: 0)
+        let importer = CoreDataImporter(
+            context: stack.container.newBackgroundContext(),
+            onOperationEnqueued: { operationEnqueued.signal() }
+        )
         let firstMapped = DispatchSemaphore(value: 0)
         let releaseFirst = DispatchSemaphore(value: 0)
-        let secondStarted = DispatchSemaphore(value: 0)
         let trace = OSAllocatedUnfairLock(initialState: [String]())
         defer { releaseFirst.signal() }
 
@@ -92,9 +97,9 @@ struct CongressImporterContractTests {
             }
         }
         try #require(await waitForSignal(firstMapped))
+        try #require(await waitForSignal(operationEnqueued))
 
         let second = Task {
-            secondStarted.signal()
             try await importer.write([Int64(4), 5], batchSize: 1) { ids, storage in
                 let id = ids[0]
                 let resources = try storage.upsert(ids: ids, identifiedBy: ResourceAsset.identity)
@@ -102,8 +107,7 @@ struct CongressImporterContractTests {
                 trace.withLock { $0.append("second \(id)") }
             }
         }
-        try #require(await waitForSignal(secondStarted))
-        await Task.yield()
+        try #require(await waitForSignal(operationEnqueued))
         releaseFirst.signal()
 
         try await first.value

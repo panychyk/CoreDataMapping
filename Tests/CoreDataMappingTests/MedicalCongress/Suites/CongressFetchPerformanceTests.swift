@@ -8,6 +8,8 @@ import Testing
 ///
 /// - `fetchCountDoesNotGrowWithEvents`: повторний імпорт восьми подій виконує
 ///   стільки ж fetch-запитів, скільки повторний імпорт однієї події.
+/// - `fetchCountDoesNotGrowWithSessions`: повторний імпорт події з вісьмома
+///   сесіями виконує стільки ж fetch-запитів, як із однією сесією.
 @MainActor
 @Suite("Medical congress · fetch performance")
 struct CongressFetchPerformanceTests {
@@ -49,6 +51,47 @@ struct CongressFetchPerformanceTests {
         readContext.persistentStoreCoordinator = coordinator
         #expect(try readContext.count(
             for: NSFetchRequest<CongressEvent>(entityName: "CongressEvent")) == 8)
+        #expect(try readContext.count(
+            for: NSFetchRequest<Session>(entityName: "Session")) == 8)
+    }
+
+    @Test("Fetch request count stays flat as one event gains sessions")
+    func fetchCountDoesNotGrowWithSessions() async throws {
+        let modelURL = try #require(Bundle.module.url(
+            forResource: "TestModel", withExtension: "momd"))
+        let model = try #require(NSManagedObjectModel(contentsOf: modelURL))
+        let coordinator = CountingFetchCoordinator(managedObjectModel: model)
+        try coordinator.addPersistentStore(
+            ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+        let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+        let importer = CoreDataImporter(context: context)
+
+        var small = CongressGraphFixture.congress()
+        small.events = [small.events[0]]
+        try await write(small, using: importer)
+        coordinator.resetFetchCount()
+        try await write(small, using: importer)
+        let smallFetchCount = coordinator.fetchCount
+        #expect(smallFetchCount > 0)
+
+        var large = small
+        let firstSession = small.events[0].tracks[0].sessions[0]
+        large.events[0].tracks[0].sessions = (1...8).map { index in
+            var session = firstSession
+            session.id = Int64(index)
+            session.title = "Session \(index)"
+            return session
+        }
+        try await write(large, using: importer)
+        coordinator.resetFetchCount()
+        try await write(large, using: importer)
+        #expect(coordinator.fetchCount == smallFetchCount)
+
+        let readContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        readContext.persistentStoreCoordinator = coordinator
+        #expect(try readContext.count(
+            for: NSFetchRequest<CongressEvent>(entityName: "CongressEvent")) == 1)
         #expect(try readContext.count(
             for: NSFetchRequest<Session>(entityName: "Session")) == 8)
     }

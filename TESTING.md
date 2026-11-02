@@ -46,11 +46,11 @@
 | `CongressSharedRelationshipsTests` | Зміна зв’язків із людьми, кімнатами, матеріалами й організаціями без втрати їхнього іншого використання. |
 | `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
 | `CongressTransactionsTests` | Rollback помилкового або скасованого batch, відкат після помилки Core Data під час save з успішним повтором, заборона mutation під час read і серіалізація конкурентних імпортів. |
-| `CongressImporterContractTests` | Серіалізація багатопорційних write/read, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
+| `CongressImporterContractTests` | Серіалізація багатопорційних write/read після постановки другого виклику в чергу, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
 | `CongressControlledConcurrencyTests` | Керовані бар’єрами два snapshots однієї події з читанням через окремий context; перекриття записів двох подій, rollback другого та успішний повтор. |
 | `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
 | `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |
-| `CongressFetchPerformanceTests` | Кількість fetch-запитів при повторному імпорті не зростає зі збільшенням числа подій та owned-дітей. |
+| `CongressFetchPerformanceTests` | Кількість fetch-запитів при повторному імпорті не зростає зі збільшенням числа подій (1 → 8) або сесій однієї події (1 → 8). |
 
 ## Marketplace
 
@@ -139,3 +139,5 @@ disk-backed integration tests. Поведінка WAL та міграція мо
 
 Лічильник у `CongressFetchPerformanceTests` вимірює fetch-запити, передані
 `NSPersistentStoreCoordinator`, а не кількість SQL-запитів у SQLite.
+`GraphAssertions` додатково звіряє сирий порядок `NSOrderedSet.array` після
+скидання read context; той самий assert виконується після відкриття SQLite.
