@@ -22,10 +22,10 @@ try await importer.write(dtos) { batch, storage in
 споживач пакета.
 
 `Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` містить спільну
-тестову модель для систем `MedicalCongress` і `Marketplace`. Кожен тест має
-власний `NSInMemoryStoreType`. Сценарії перевіряють спільні й дочірні зв’язки,
-ізоляцію оновлень, кілька імпортів, rollback і cancellation. Тестова схема не
-входить у library product.
+тестову модель для систем `MedicalCongress`, `Marketplace`, `University` і
+`TravelBooking`. Кожен тест має власний `NSInMemoryStoreType`. Сценарії
+перевіряють спільні й дочірні зв’язки, ізоляцію оновлень, кілька імпортів,
+rollback і cancellation. Тестова схема не входить у library product.
 
 - [Практичний посібник](CORE_GUIDE.md): API, identity, relationships, ownership,
   delete rules і складені ключі.

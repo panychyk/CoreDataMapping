@@ -16,12 +16,13 @@ container, networking, feature mappers і repositories визначає заст
 fields і relationships; він не викликає `save`, `rollback` або `reset`.
 
 `Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна спільна
-тестова схема з 26 Entity: 15 для медичного конгресу й 11 для маркетплейсу.
+тестова схема з 49 Entity: 15 для медичного конгресу, 11 для маркетплейсу,
+12 для університету й 11 для бронювання подорожей.
 `Support/TestStack.swift` завантажує її в окремий `NSInMemoryStoreType` для
-кожного тесту. У `MedicalCongress` і `Marketplace` лежать власні
-`NSManagedObject` класи, невеликі графи, правила запису та сценарії. Схема й
-фікстури не входять до library target; у test target немає мережевого,
-repository чи domain-шару.
+кожного тесту. У `MedicalCongress`, `Marketplace`, `University` і
+`TravelBooking` лежать власні `NSManagedObject` класи, невеликі графи,
+правила запису та сценарії. Схема й фікстури не входять до library target;
+у test target немає мережевого, repository чи domain-шару.
 Стратегія тестів і опис зв’язків — у [TESTING.md](TESTING.md).
 
 ## Context і concurrency

@@ -4,11 +4,13 @@
 
 Приклад із медичним конгресом, двома подіями та спільними людьми, кімнатами й
 матеріалами є у `Tests/CoreDataMappingTests/MedicalCongress/GraphWriter.swift`.
-Другий приклад — `Marketplace/MarketplaceGraphWriter.swift`: товар належить
+Приклад маркетплейсу — `Marketplace/MarketplaceGraphWriter.swift`: товар належить
 продавцю, але використовується в багатьох замовленнях і категоріях; позиції,
-платежі й доставки узгоджуються в межах свого замовлення. Обидва приклади
-використовують спільну модель `Resources/TestModel.xcdatamodeld` і окремий
-in-memory store для кожного тесту. Сценарії та правила зв’язків описані в
+платежі й доставки узгоджуються в межах свого замовлення. Приклади університету
+й бронювання подорожей лежать у `University/UniversityGraphWriter.swift` та
+`TravelBooking/TravelGraphWriter.swift`. Усі чотири системи використовують
+спільну модель `Resources/TestModel.xcdatamodeld` і окремий in-memory store
+для кожного тесту. Сценарії та правила зв’язків описані в
 [TESTING.md](TESTING.md).
 
 ## 1. Що робить core
