@@ -38,7 +38,7 @@
 | `CongressImportHistoryTests` | Послідовні та повторні імпорти, ізольоване оновлення події й історія з кількох збережень. |
 | `CongressSharedRelationshipsTests` | Зміна зв’язків із людьми, кімнатами, матеріалами й організаціями без втрати їхнього іншого використання. |
 | `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
-| `CongressTransactionsTests` | Rollback помилкового або скасованого batch, заборона mutation під час read і серіалізація конкурентних імпортів. |
+| `CongressTransactionsTests` | Rollback помилкового або скасованого batch, відкат після помилки Core Data під час save з успішним повтором, заборона mutation під час read і серіалізація конкурентних імпортів. |
 | `CongressImporterContractTests` | Серіалізація багатопорційних write/read, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
 | `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
 | `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |

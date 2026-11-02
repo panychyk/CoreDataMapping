@@ -1,3 +1,4 @@
+import CoreData
 import CoreDataMapping
 import Foundation
 import Testing
@@ -9,6 +10,8 @@ import Testing
 /// - `duplicateOwnedID`: дубль локального ID відхиляє batch без зміни графа.
 /// - `missingReference`: відсутня кімната відкочує поточне оновлення.
 /// - `failedBatch`: помилка другої порції зберігає вже завершену першу.
+/// - `saveFailureRollbackAndRetry`: помилка Core Data під час save відкочує
+///   весь batch; той самий importer успішно записує наступний snapshot.
 /// - `cancellationRollback`: скасування відкочує активну порцію та зберігає
 ///   результат попереднього save.
 /// - `readRollback`: мутація під час `read` відхиляється без запису.
@@ -67,6 +70,36 @@ struct CongressTransactionsTests {
             Issue.record("The second batch should fail")
         } catch ExpectedFailure.secondBatch {}
         try GraphAssertions.matches(first, in: stack)
+    }
+
+    @Test("A Core Data save failure rolls back the batch and the importer can retry")
+    func saveFailureRollbackAndRetry() async throws {
+        let stack = try CongressTestStack()
+        try await stack.load()
+        let original = CongressGraphFixture.congress()
+        try await stack.write(original)
+
+        var changed = original
+        changed.events[0].title = "Updated after retry"
+        changed.resources[0].title = "Updated resource after retry"
+
+        do {
+            try await stack.importer.write([changed]) { batch, storage in
+                try GraphWriter.write(batch, using: storage)
+                let invalid = try storage.insert(ResourceAsset.self)
+                invalid.setPrimitiveValue(nil, forKey: "id")
+            }
+            Issue.record("Saving a resource without its required ID should fail")
+        } catch {
+            let error = error as NSError
+            #expect(error.domain == NSCocoaErrorDomain)
+            #expect(error.code == NSValidationMissingMandatoryPropertyError)
+        }
+
+        try GraphAssertions.matches(original, in: stack)
+
+        try await stack.write(changed)
+        try GraphAssertions.matches(changed, in: stack)
     }
 
     @Test("Cancellation rolls back the active batch and retains the prior save")
