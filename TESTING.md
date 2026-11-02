@@ -9,7 +9,12 @@
 `Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна Core Data
 модель для чотирьох систем. Скомпільована `TestModel.momd` лежить поруч і входить
 лише до test target. `Support/TestStack.swift` завантажує модель у
-`NSInMemoryStoreType`; кожен тест зі збереженням даних створює власний store.
+`NSInMemoryStoreType` за замовчуванням; кожен тест зі збереженням даних створює
+власний store. SQLite integration tests передають stack URL тимчасового store.
+
+`Integration/Suites/SQLiteReopenTests.swift` перевіряє повний граф конгресу
+після відкриття store новим container, а також оновлення замовлення маркетплейсу
+після двох послідовних відкриттів. Кожен тест має власний файл SQLite.
 
 ## MedicalCongress
 
@@ -124,5 +129,6 @@ reviews мають identity `id`. `localID` позицій, платежів і 
 оновлену `.momd` разом із `.xcdatamodeld`. Для перевірки пакета запустіть
 `swift build` і `swift test`.
 
-In-memory тести не перевіряють повторне відкриття SQLite, WAL або міграцію
-моделі. Для цього потрібні окремі disk-backed integration tests.
+In-memory тести не перевіряють повторне відкриття SQLite; це роблять окремі
+disk-backed integration tests. Поведінка WAL та міграція моделі наразі не
+перевіряються.

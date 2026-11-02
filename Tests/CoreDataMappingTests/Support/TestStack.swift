@@ -8,7 +8,7 @@ final class TestStack {
     let container: NSPersistentContainer
     lazy var importer = CoreDataImporter(context: container.newBackgroundContext())
 
-    init() throws {
+    init(storeURL: URL? = nil) throws {
         guard
             let modelURL = Bundle.module.url(
                 forResource: "TestModel", withExtension: "momd"),
@@ -19,9 +19,15 @@ final class TestStack {
         container = NSPersistentContainer(
             name: "TestModel", managedObjectModel: model
         )
-        let description = NSPersistentStoreDescription()
-        description.type = NSInMemoryStoreType
-        description.url = nil
+        let description: NSPersistentStoreDescription
+        if let storeURL {
+            description = NSPersistentStoreDescription(url: storeURL)
+            description.type = NSSQLiteStoreType
+        } else {
+            description = NSPersistentStoreDescription()
+            description.type = NSInMemoryStoreType
+            description.url = nil
+        }
         container.persistentStoreDescriptions = [description]
     }
 
