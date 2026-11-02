@@ -47,6 +47,7 @@
 | `CongressImporterContractTests` | Серіалізація багатопорційних write/read, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
 | `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
 | `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |
+| `CongressFetchPerformanceTests` | Кількість fetch-запитів при повторному імпорті не зростає зі збільшенням числа подій та owned-дітей. |
 
 ## Marketplace
 
@@ -132,3 +133,6 @@ reviews мають identity `id`. `localID` позицій, платежів і 
 In-memory тести не перевіряють повторне відкриття SQLite; це роблять окремі
 disk-backed integration tests. Поведінка WAL та міграція моделі наразі не
 перевіряються.
+
+Лічильник у `CongressFetchPerformanceTests` вимірює fetch-запити, передані
+`NSPersistentStoreCoordinator`, а не кількість SQL-запитів у SQLite.
