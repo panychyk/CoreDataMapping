@@ -21,11 +21,10 @@ try await importer.write(dtos) { batch, storage in
 Модель Core Data, `NSManagedObject` subclasses і правила побудови графа визначає
 споживач пакета.
 
-`Tests/CoreDataMappingTests/MedicalCongress` містить тестову систему медичних
-конгресів: модель `MedicalCongressModel.xcdatamodeld`, класи в `Entities`,
-сценарії в `Suites` і код запису графа. Кожен suite об’єднує кілька незалежних
-тестів одного потоку. Тести використовують `NSInMemoryStoreType` та перевіряють спільні й
-дочірні зв’язки, кілька імпортів, rollback і cancellation. Тестова схема не
+`Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` містить спільну
+тестову модель для систем `MedicalCongress` і `Marketplace`. Кожен тест має
+власний `NSInMemoryStoreType`. Сценарії перевіряють спільні й дочірні зв’язки,
+ізоляцію оновлень, кілька імпортів, rollback і cancellation. Тестова схема не
 входить у library product.
 
 - [Практичний посібник](CORE_GUIDE.md): API, identity, relationships, ownership,

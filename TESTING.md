@@ -1,91 +1,80 @@
-# Тестова система: медичний конгрес
+# Тестування CoreDataMapping
 
-Усі тестові файли лежать у `Tests/CoreDataMappingTests/MedicalCongress`:
+Цей документ описує наявні тестові системи: їхні графи, правила зв’язків і
+сценарії. Правила додавання систем та оформлення suites — в
+[AGENTS.md](AGENTS.md).
 
-- `Resources/MedicalCongressModel.xcdatamodeld` — схема Core Data; згенерована
-  `.momd` зберігається поруч.
-- `Entities` — по одному `NSManagedObject` subclass на Entity.
-- `CongressGraphFixture.swift` — маленький граф: конгрес, дві події, три людини, дві
-  організації, дві кімнати, два матеріали, сесії та зустрічі.
-- `GraphWriter.swift` — тестовий mapper без мережі, decoding, repository чи
-  domain-шару.
-- `Suites` — п’ять файлів зі сценаріями. Кожен suite містить кілька незалежних
-  тестів одного потоку; кожен тест має власний in-memory store.
+## Спільна інфраструктура
 
-`CongressTestStack` використовує `NSInMemoryStoreType`. Кожен тест створює
-новий store. `GraphAssertions` скидає read context перед перевіркою, звіряє
-склад графа й кількість дочірніх записів, перевіряє їхніх власників.
+`Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна Core Data
+модель для обох систем. Скомпільована `TestModel.momd` лежить поруч і входить
+лише до test target. `Support/TestStack.swift` завантажує модель у
+`NSInMemoryStoreType`; кожен тест зі збереженням даних створює власний store.
 
-## Правила зв’язків
+## MedicalCongress
 
-| Зв’язок | Власник | Правило |
-|---|---|---|
-| `Congress → CongressEvent` | Окремі root-записи | Видалення конгресу розриває зв’язок із подіями. |
-| `Venue → Room` | `Venue` | Видалення місця каскадно видаляє його кімнати. Події та зустрічі лише посилаються на кімнати. |
-| `CongressEvent → Track → Session` | Подія й доріжка програми | Повний snapshot узгоджує дочірні записи за локальним ID; пропущені видаляються. |
-| `CongressEvent → Appointment → AppointmentParticipant` | Подія й зустріч | Заміна складу видаляє лише зайві записи участі. `Person` і `Room` залишаються. |
-| `CongressEvent → Registration → CheckIn` | Подія й реєстрація | Вилучення реєстрації видаляє її check-in; `Person` залишається. |
-| `CongressEvent → EventSponsor → Organization` | Подія | Вилучення спонсорства не видаляє організацію. |
-| `Session → SessionSpeaker → Person` | Сесія | Вилучення сесії видаляє speaker join, але не людину. |
-| `Session ↔ ResourceAsset` | Спільний матеріал | Заміна membership не видаляє матеріал або його зв’язки з іншими сесіями. |
+`MedicalCongress/Entities/` містить 15 класів Entity. Поруч лежать
+`CongressGraphFixture.swift`,
+`GraphWriter.swift`, `GraphAssertions.swift`, `CongressTestStack.swift` і
+`Suites/`. Фікстура має конгрес із двома подіями; люди, кімнати, організації та
+матеріали використовуються в кількох частинах графа.
+
+| Зв’язок | Правило |
+|---|---|
+| `Congress → CongressEvent` | Події — окремі root-записи; видалення конгресу розриває зв’язок. |
+| `Venue → Room` | Кімнати належать місцю проведення; видалення venue каскадне. |
+| `CongressEvent → Track → Session` | Подія володіє tracks, track — sessions; повний snapshot узгоджує їх за локальним ID. |
+| `CongressEvent → Appointment / Registration / EventSponsor` | Подія володіє зустрічами, реєстраціями й записами спонсорства та їхніми дочірніми join rows. |
+| `Session ↔ ResourceAsset` | Матеріали спільні; зміна membership не видаляє їх. |
+| `Person`, `Room`, `Organization` у дочірньому графі | Посилання на спільні записи не передають дочірнім Entity права на їх видалення. |
 
 Глобальні `Congress`, `CongressEvent`, `Organization`, `Person`, `Venue`, `Room`
-і `ResourceAsset` мають uniqueness constraint на `id`. Дочірні Entity мають
-`localID`, який є унікальним лише в межах свого власника. Mapper пакетно
-підготовлює глобальні identities перед зв’язуванням і не робить fetch усередині
-циклів mapping.
+і `ResourceAsset` мають uniqueness constraint на `id`. `localID` дочірніх Entity
+унікальний лише в межах власника.
 
-## Що перевіряється
-
-### Модель і початковий запис — `CongressModelAndImportTests`
-
-| Тест | Перевірка |
+| Suite | Сценарій |
 |---|---|
-| `schemaRules` | Усі relationships мають inverse; owned-зв’язки каскадні, спільні — `Nullify`. |
-| `identityLookup` | Batch lookup прибирає дублікати ID, пропускає відсутні записи та відхиляє недопустимий розмір fetch-порції. |
-| `fullGraphSurvivesContextReset` | Увесь конгрес, дві події, учасники, сесії, зустрічі та їхні зв’язки читаються після reset context. |
+| `CongressModelAndImportTests` | Правила схеми, batch identity lookup і перший запис повного графа. |
+| `CongressImportHistoryTests` | Послідовні та повторні імпорти, ізольоване оновлення події й історія з кількох збережень. |
+| `CongressSharedRelationshipsTests` | Зміна зв’язків із людьми, кімнатами, матеріалами й організаціями без втрати їхнього іншого використання. |
+| `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
+| `CongressTransactionsTests` | Rollback помилкового або скасованого batch, заборона mutation під час read і серіалізація конкурентних імпортів. |
 
-### Історія імпортів — `CongressImportHistoryTests`
+## Marketplace
 
-| Тест | Перевірка |
+`Marketplace/Entities/` містить 11 класів Entity. Поруч лежать
+`MarketplaceGraphFixture.swift`,
+`MarketplaceGraphWriter.swift`, `MarketplaceGraphAssertions.swift`,
+`MarketplaceTestStack.swift` і `Suites/`. Фікстура має два замовлення зі спільним
+товаром та однаковими локальними ID позицій. Це перевіряє, що позиція належить
+конкретному замовленню.
+
+| Зв’язок | Правило |
 |---|---|
-| `sequentialImports` | Дві послідовні порції створюють цілісний граф двох подій. |
-| `repeatedImport` | Повторний повний snapshot використовує ті самі rows, без дублювання зустрічей. |
-| `isolatedUpdate` | Оновлення першої події не змінює другу. |
-| `multistageHistory` | Після чотирьох збережень зберігаються актуальні shared-зв’язки та owned-записи без «сиріт». |
+| `Seller → Product` | Товар належить продавцю; видалення продавця каскадно видаляє його товари. |
+| `Product ↔ Category` | Категорії спільні; зміна membership не видаляє категорії. |
+| `Product → OrderItem ← Order` | Товар може бути в багатьох замовленнях; позиція належить лише своєму замовленню. |
+| `Product → Stock ← Warehouse` | Залишок має глобальний ID і посилається на товар та склад. |
+| `Order → Payment / Shipment` | Платежі й доставки належать замовленню; повний snapshot узгоджує лише його дітей. |
+| `Buyer → Order / Review`, `Product → Review` | Покупець спільний; відгук має глобальний ID і посилається на товар. |
 
-### Спільні зв’язки — `CongressSharedRelationshipsTests`
+Глобальні buyers, sellers, products, categories, warehouses, stocks, orders і
+reviews мають identity `id`. `localID` позицій, платежів і доставок
+унікальний у межах свого замовлення.
 
-| Тест | Перевірка |
+| Suite | Сценарій |
 |---|---|
-| `sharedPerson` | Вилучення людини з однієї зустрічі зберігає її участь в інших зустрічах і реєстраціях. |
-| `sharedRoom` | Перенесення зустрічі в іншу кімнату не змінює інші бронювання. |
-| `sharedResource` | Відв’язування матеріалу від однієї сесії зберігає його в іншій. |
-| `sponsorSnapshot` | Вилучення спонсорства однієї події зберігає організацію та її інше спонсорство. |
+| `MarketplaceModelAndImportTests` | Правила схеми та перший запис усього графа. |
+| `MarketplaceImportHistoryTests` | Повторний імпорт та оновлення одного замовлення без зміни іншого. |
+| `MarketplaceSharedRelationshipsTests` | Зміна категорій і залишку зі збереженням спільних зв’язків. |
+| `MarketplaceOwnedLifecycleTests` | Вилучення платежу, доставки та замовлення з очищенням лише його дітей. |
+| `MarketplaceTransactionsTests` | Rollback після дубльованого локального ID або відсутнього товару. |
 
-### Життєвий цикл дочірніх записів — `CongressOwnedLifecycleTests`
+## Перевірка
 
-| Тест | Перевірка |
-|---|---|
-| `participantSnapshot` | Повний snapshot видаляє зайві join rows учасників, не видаляючи людей. |
-| `appointmentSnapshot` | Вилучення зустрічі видаляє її учасників, але зберігає людей і кімнати. |
-| `sessionSnapshot` | Вилучення сесії видаляє speaker joins, але зберігає матеріали й людей. |
-| `registrationSnapshot` | Вилучення реєстрації видаляє її check-ins, але зберігає людину й іншу реєстрацію. |
-| `eventDeletion` | Видалення події каскадно видаляє її owned-граф, залишаючи спільні записи. |
-
-### Транзакції імпортера — `CongressTransactionsTests`
-
-| Тест | Перевірка |
-|---|---|
-| `duplicateOwnedID` | Повторний локальний ID зустрічі відхиляє batch; збережений граф не змінюється. |
-| `missingReference` | Посилання на відсутню кімнату відкочує оновлення. |
-| `failedBatch` | Помилка в другій порції залишає першу порцію збереженою. |
-| `cancellationRollback` | Скасування відкочує поточну порцію, зберігаючи попередній save. |
-| `readRollback` | Спроба запису під час `read` відхиляється й не створює row. |
-| `concurrentImports` | Один importer серіалізує конкурентні записи двох подій без втрати зв’язків. |
-
-In-memory store не перевіряє повторне відкриття файлу SQLite, WAL або міграцію
-моделі між версіями. Для цих перевірок потрібні окремі disk-backed тести.
-
-Після зміни `.xcdatamodeld` запустіть `./Scripts/update-test-model.sh`, потім
+Після зміни моделі запустіть `./Scripts/update-test-model.sh` і збережіть
+оновлену `.momd` разом із `.xcdatamodeld`. Для перевірки пакета запустіть
 `swift build` і `swift test`.
+
+In-memory тести не перевіряють повторне відкриття SQLite, WAL або міграцію
+моделі. Для цього потрібні окремі disk-backed integration tests.

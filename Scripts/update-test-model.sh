@@ -2,8 +2,8 @@
 set -eu
 
 package_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-source_model="$package_dir/Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.xcdatamodeld"
-compiled_model="$package_dir/Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.momd"
+source_model="$package_dir/Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld"
+compiled_model="$package_dir/Tests/CoreDataMappingTests/Resources/TestModel.momd"
 sdkroot=$(xcrun --sdk macosx --show-sdk-path)
 
 xcrun momc \

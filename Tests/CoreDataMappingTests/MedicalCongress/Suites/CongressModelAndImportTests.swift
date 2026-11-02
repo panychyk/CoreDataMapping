@@ -18,10 +18,10 @@ struct CongressModelAndImportTests {
     func schemaRules() throws {
         let url = try #require(
             Bundle.module.url(
-                forResource: "MedicalCongressModel", withExtension: "momd"
+                forResource: "TestModel", withExtension: "momd"
             ))
         let model = try #require(NSManagedObjectModel(contentsOf: url))
-        #expect(model.entities.count == 15)
+        #expect(model.entities.count == 26)
         for entity in model.entities {
             for relationship in entity.relationshipsByName.values {
                 #expect(relationship.inverseRelationship?.inverseRelationship === relationship)

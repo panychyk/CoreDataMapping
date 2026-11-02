@@ -102,4 +102,81 @@
         <relationship name="person" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Person" inverseName="speakingRoles" inverseEntity="Person"/>
         <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Session" inverseName="speakers" inverseEntity="Session"/>
     </entity>
+    <entity name="MarketBuyer" representedClassName="MarketBuyer" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="orders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketOrder" inverseName="buyer" inverseEntity="MarketOrder"/>
+        <relationship name="reviews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketReview" inverseName="buyer" inverseEntity="MarketReview"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketSeller" representedClassName="MarketSeller" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="products" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketProduct" inverseName="seller" inverseEntity="MarketProduct"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketProduct" representedClassName="MarketProduct" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="seller" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketSeller" inverseName="products" inverseEntity="MarketSeller"/>
+        <relationship name="categories" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketCategory" inverseName="products" inverseEntity="MarketCategory"/>
+        <relationship name="stocks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketStock" inverseName="product" inverseEntity="MarketStock"/>
+        <relationship name="orderItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketOrderItem" inverseName="product" inverseEntity="MarketOrderItem"/>
+        <relationship name="reviews" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketReview" inverseName="product" inverseEntity="MarketReview"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketCategory" representedClassName="MarketCategory" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="products" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketProduct" inverseName="categories" inverseEntity="MarketProduct"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketWarehouse" representedClassName="MarketWarehouse" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="stocks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketStock" inverseName="warehouse" inverseEntity="MarketStock"/>
+        <relationship name="shipments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MarketShipment" inverseName="warehouse" inverseEntity="MarketShipment"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketStock" representedClassName="MarketStock" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="quantity" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketProduct" inverseName="stocks" inverseEntity="MarketProduct"/>
+        <relationship name="warehouse" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketWarehouse" inverseName="stocks" inverseEntity="MarketWarehouse"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketOrder" representedClassName="MarketOrder" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="buyer" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketBuyer" inverseName="orders" inverseEntity="MarketBuyer"/>
+        <relationship name="items" optional="YES" toMany="YES" ordered="YES" deletionRule="Cascade" destinationEntity="MarketOrderItem" inverseName="order" inverseEntity="MarketOrderItem"/>
+        <relationship name="payments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketPayment" inverseName="order" inverseEntity="MarketPayment"/>
+        <relationship name="shipments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MarketShipment" inverseName="order" inverseEntity="MarketShipment"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
+    <entity name="MarketOrderItem" representedClassName="MarketOrderItem" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="quantity" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="order" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketOrder" inverseName="items" inverseEntity="MarketOrder"/>
+        <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketProduct" inverseName="orderItems" inverseEntity="MarketProduct"/>
+    </entity>
+    <entity name="MarketPayment" representedClassName="MarketPayment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="amount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="order" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketOrder" inverseName="payments" inverseEntity="MarketOrder"/>
+    </entity>
+    <entity name="MarketShipment" representedClassName="MarketShipment" syncable="YES">
+        <attribute name="localID" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="tracking" optional="YES" attributeType="String"/>
+        <relationship name="order" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketOrder" inverseName="shipments" inverseEntity="MarketOrder"/>
+        <relationship name="warehouse" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketWarehouse" inverseName="shipments" inverseEntity="MarketWarehouse"/>
+    </entity>
+    <entity name="MarketReview" representedClassName="MarketReview" syncable="YES">
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="rating" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="buyer" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketBuyer" inverseName="reviews" inverseEntity="MarketBuyer"/>
+        <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MarketProduct" inverseName="reviews" inverseEntity="MarketProduct"/>
+        <uniquenessConstraints><uniquenessConstraint><constraint value="id"/></uniquenessConstraint></uniquenessConstraints>
+    </entity>
 </model>

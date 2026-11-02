@@ -15,14 +15,13 @@ container, networking, feature mappers і repositories визначає заст
 Пакет не декодує DTO й не обходить граф автоматично. Mapper явно встановлює scalar
 fields і relationships; він не викликає `save`, `rollback` або `reset`.
 
-`Tests/CoreDataMappingTests/MedicalCongress/Resources/MedicalCongressModel.xcdatamodeld`
-містить тестову схему медичного конгресу з 15 Entity. `Entities` містить їхні
-`NSManagedObject` класи, `CongressGraphFixture` — невеликий зв’язний граф із двома подіями,
-а `GraphWriter` — правила запису. `CongressTestStack` завантажує скомпільовану
-модель у `NSInMemoryStoreType`. `GraphAssertions` перевіряє збережений граф і
-відсутність осиротілих owned-записів. Сценарії у `Suites` згруповані за
-потоками; кожен suite містить кілька окремих тестів. У target немає мережевого, repository чи domain-шару; тестова
-схема не є частиною публічного API.
+`Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна спільна
+тестова схема з 26 Entity: 15 для медичного конгресу й 11 для маркетплейсу.
+`Support/TestStack.swift` завантажує її в окремий `NSInMemoryStoreType` для
+кожного тесту. У `MedicalCongress` і `Marketplace` лежать власні
+`NSManagedObject` класи, невеликі графи, правила запису та сценарії. Схема й
+фікстури не входять до library target; у test target немає мережевого,
+repository чи domain-шару.
 Стратегія тестів і опис зв’язків — у [TESTING.md](TESTING.md).
 
 ## Context і concurrency
