@@ -3,17 +3,17 @@ import Foundation
 import os
 import Testing
 
-/// Перевіряє контракти importer-а на малих незалежних записах ресурсів.
-/// Порції одного виклику не перемішуються з іншим, а transaction зберігає
-/// або відкочує зміни цілком.
+/// Verifies importer contracts using small independent resource records.
+/// Batches from one call do not interleave with another; a transaction either
+/// commits or rolls back all its changes.
 ///
-/// - `writeAndReadDoNotInterleave`: queued read бачить усі порції write.
-/// - `concurrentWritesDoNotInterleave`: queued write чекає всіх порцій першого.
-/// - `readPreservesBatchOrder`: read накопичує результати в порядку вхідних ID.
-/// - `transactionCommits`: transaction зберігає результат для нового контексту.
-/// - `transactionRollsBack`: помилка відкочує зміни й не псує наступний виклик.
-/// - `emptyInputsSkipMapping`: порожні write та read не викликають mapper.
-/// - `invalidBatchSizeIsRejected`: write та read відхиляють нуль і від’ємний розмір.
+/// - `writeAndReadDoNotInterleave`: a queued read sees every write batch.
+/// - `concurrentWritesDoNotInterleave`: a queued write waits for all first-call batches.
+/// - `readPreservesBatchOrder`: read accumulates results in input ID order.
+/// - `transactionCommits`: a transaction persists results for a new context.
+/// - `transactionRollsBack`: failure rolls back changes without harming the next call.
+/// - `emptyInputsSkipMapping`: empty writes and reads do not call the mapper.
+/// - `invalidBatchSizeIsRejected`: writes and reads reject zero or negative sizes.
 @MainActor
 @Suite("Medical congress · importer contract")
 struct CongressImporterContractTests {

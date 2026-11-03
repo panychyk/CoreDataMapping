@@ -1,13 +1,14 @@
 import Testing
 
-/// Перевіряє, що зміна учасників, кімнат, матеріалів чи спонсорів в одній
-/// події не порушує їхнього використання в інших подіях.
+/// Verifies that changing participants, rooms, resources, or sponsors in one
+/// event does not disrupt their use in other events.
 ///
-/// - `sharedPerson`: вилучення з однієї зустрічі зберігає інші зустрічі й реєстрації.
-/// - `sharedRoom`: перенесення зустрічі не змінює інші бронювання кімнати.
-/// - `sharedResource`: відв’язування матеріалу зберігає його в іншій сесії.
-/// - `sponsorSnapshot`: вилучення спонсорства зберігає організацію та її
-///   спонсорство другої події.
+/// - `sharedPerson`: removal from one appointment preserves other appointments
+///   and registrations.
+/// - `sharedRoom`: moving an appointment leaves other room bookings unchanged.
+/// - `sharedResource`: unlinking a resource preserves it in another session.
+/// - `sponsorSnapshot`: removing sponsorship preserves the organization and its
+///   sponsorship of the second event.
 @MainActor
 @Suite("Medical congress · shared relationships")
 struct CongressSharedRelationshipsTests {

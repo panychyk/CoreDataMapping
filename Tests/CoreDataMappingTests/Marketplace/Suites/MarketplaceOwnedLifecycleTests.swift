@@ -2,13 +2,13 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє життєвий цикл дітей конкретного замовлення. Вилучення
-/// платежу, доставки або цілого замовлення не видаляє спільні товари й склади.
+/// Verifies the lifecycle of children owned by a particular order. Removing a
+/// payment, shipment, or entire order preserves shared products and warehouses.
 ///
-/// - `orderChildrenSnapshot`: повний snapshot видаляє платіж і доставку лише
-///   першого замовлення.
-/// - `orderDeletion`: каскадне видалення прибирає його позиції, платежі й
-///   доставки, залишаючи друге замовлення.
+/// - `orderChildrenSnapshot`: a full snapshot deletes payment and shipment rows
+///   only from the first order.
+/// - `orderDeletion`: cascade deletion removes its items, payments, and shipments
+///   while preserving the second order.
 @MainActor
 @Suite("Marketplace · owned lifecycle")
 struct MarketplaceOwnedLifecycleTests {

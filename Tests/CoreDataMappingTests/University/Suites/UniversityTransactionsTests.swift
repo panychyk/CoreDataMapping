@@ -1,13 +1,13 @@
 import CoreDataMapping
 import Testing
 
-/// Перевіряє цілісність імпорту при конфліктах локальних ID і зв’язків.
-/// Помилковий batch відкочується разом зі змінами root, а попередні batch збережені.
+/// Verifies import integrity under local ID and relationship conflicts.
+/// A failed batch rolls back root changes while earlier batches remain committed.
 ///
-/// - `duplicateAssignmentRollback`: однакові локальні ID завдань відхиляють snapshot.
-/// - `missingAssignmentRollback`: оцінка не може посилатися на завдання іншого проведення.
-/// - `duplicateStudentRollback`: студент не може бути записаний двічі на одне проведення.
-/// - `committedBatchSurvivesFailure`: помилка другого batch не відкочує перший.
+/// - `duplicateAssignmentRollback`: duplicate local assignment IDs reject the snapshot.
+/// - `missingAssignmentRollback`: a grade cannot refer to another offering's assignment.
+/// - `duplicateStudentRollback`: a student cannot enroll twice in one offering.
+/// - `committedBatchSurvivesFailure`: failure of the second batch preserves the first.
 @MainActor
 @Suite("University · import transactions")
 struct UniversityTransactionsTests {

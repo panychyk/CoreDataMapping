@@ -2,12 +2,12 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє повторний імпорт і незалежність двох замовлень, які мають
-/// спільний товар та однакові локальні ID позицій.
+/// Verifies repeated imports and independence of two orders that share a
+/// product and use the same local item IDs.
 ///
-/// - `isolatedOrderUpdate`: оновлення позицій, платежу й доставки першого
-///   замовлення не змінює друге.
-/// - `repeatedImport`: повторний snapshot використовує ті самі root і child rows.
+/// - `isolatedOrderUpdate`: changes to the first order's items, payment, and
+///   shipment leave the second order unchanged.
+/// - `repeatedImport`: a repeated snapshot reuses the same root and child rows.
 @MainActor
 @Suite("Marketplace · import history")
 struct MarketplaceImportHistoryTests {

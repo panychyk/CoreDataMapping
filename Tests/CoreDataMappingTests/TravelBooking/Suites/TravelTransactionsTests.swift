@@ -1,14 +1,14 @@
 import CoreDataMapping
 import Testing
 
-/// Перевіряє відкат складного вкладеного snapshot і межі batch.
-/// Помилка не залишає частково змінених дітей або спільних посилань.
+/// Verifies rollback of a complex nested snapshot and batch boundaries.
+/// A failure leaves no partially changed children or shared references.
 ///
-/// - `duplicateChildRollback`: повторний ID платежу відкочує цілий імпорт.
-/// - `foreignGuestRollback`: квиток на гостя поза бронюванням відхиляється.
-/// - `invalidKindRollback`: бронювання з рейсом і номером одночасно відхиляється.
-/// - `duplicateSeatRollback`: повторне місце у квитках того самого бронювання відкочується.
-/// - `laterBatchRollback`: збережений перший batch лишається після помилки другого.
+/// - `duplicateChildRollback`: a repeated payment ID rolls back the whole import.
+/// - `foreignGuestRollback`: a ticket referencing a guest outside its booking is rejected.
+/// - `invalidKindRollback`: a booking with both flight and room is rejected.
+/// - `duplicateSeatRollback`: a repeated seat in one booking rolls back the change.
+/// - `laterBatchRollback`: the saved first batch survives failure of the second.
 @MainActor
 @Suite("Travel · import transactions")
 struct TravelTransactionsTests {

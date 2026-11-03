@@ -2,12 +2,14 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє складні зміни зв’язків і каскадне видалення в університеті.
-/// Повний snapshot узгоджує лише дітей свого проведення; shared-рядки залишаються.
+/// Verifies complex university relationship changes and cascade deletion.
+/// A full snapshot reconciles only an offering's children; shared rows remain.
 ///
-/// - `moveSharedResources`: зміна викладача, аудиторії та групи зберігає інші проведення.
-/// - `reconcileOwnedGraph`: вилучення запису й завдання прибирає їхні оцінки тільки в одному проведенні.
-/// - `deleteOffering`: видалення проведення каскадно прибирає дітей, лишаючи курс, семестр і shared-рядки.
+/// - `moveSharedResources`: teacher, room, and group changes preserve other offerings.
+/// - `reconcileOwnedGraph`: removing an enrollment and assignment removes their
+///   grades only within one offering.
+/// - `deleteOffering`: deletion cascades to children while preserving the course,
+///   semester, and shared rows.
 @MainActor
 @Suite("University · relationships and lifecycle")
 struct UniversityRelationshipsAndLifecycleTests {

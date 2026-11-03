@@ -2,13 +2,13 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє спільні зв’язки товарів із категоріями, складами та
-/// замовленнями після окремих оновлень.
+/// Verifies shared product links to categories, warehouses, and orders after
+/// separate updates.
 ///
-/// - `categoryMembership`: зміна категорій товару зберігає категорії та
-///   використання товару в обох замовленнях.
-/// - `stockUpdate`: оновлення залишку на одному складі зберігає залишок
-///   іншого складу й замовлення.
+/// - `categoryMembership`: changing product categories preserves the categories
+///   and the product's use in both orders.
+/// - `stockUpdate`: updating stock at one warehouse preserves the other
+///   warehouse's stock and the orders.
 @MainActor
 @Suite("Marketplace · shared relationships")
 struct MarketplaceSharedRelationshipsTests {

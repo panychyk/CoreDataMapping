@@ -3,19 +3,18 @@ import CoreDataMapping
 import Foundation
 import Testing
 
-/// Перевіряє, що помилки й скасування не залишають незавершених змін, а
-/// одночасні імпорти не заважають один одному. Дані, збережені до помилки,
-/// залишаються доступними.
+/// Verifies that failures and cancellation leave no unfinished changes and
+/// concurrent imports do not interfere. Earlier committed data remains available.
 ///
-/// - `duplicateOwnedID`: дубль локального ID відхиляє batch без зміни графа.
-/// - `missingReference`: відсутня кімната відкочує поточне оновлення.
-/// - `failedBatch`: помилка другої порції зберігає вже завершену першу.
-/// - `saveFailureRollbackAndRetry`: помилка Core Data під час save відкочує
-///   весь batch; той самий importer успішно записує наступний snapshot.
-/// - `cancellationRollback`: скасування відкочує активну порцію та зберігає
-///   результат попереднього save.
-/// - `readRollback`: мутація під час `read` відхиляється без запису.
-/// - `concurrentImports`: один importer серіалізує конкурентні записи двох подій.
+/// - `duplicateOwnedID`: a duplicate local ID rejects a batch without changing the graph.
+/// - `missingReference`: a missing room rolls back the current update.
+/// - `failedBatch`: failure in the second batch preserves the committed first batch.
+/// - `saveFailureRollbackAndRetry`: a Core Data save failure rolls back the entire
+///   batch; the same importer writes the next snapshot successfully.
+/// - `cancellationRollback`: cancellation rolls back the active batch and
+///   preserves the previous save.
+/// - `readRollback`: mutation during `read` is rejected without writing.
+/// - `concurrentImports`: one importer serializes writes to two events.
 @MainActor
 @Suite("Medical congress · import transactions")
 struct CongressTransactionsTests {

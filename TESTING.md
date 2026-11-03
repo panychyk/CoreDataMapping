@@ -1,143 +1,141 @@
-# Тестування CoreDataMapping
+# Testing CoreDataMapping
 
-Цей документ описує наявні тестові системи: їхні графи, правила зв’язків і
-сценарії. Правила додавання систем та оформлення suites — в
-[AGENTS.md](AGENTS.md).
+This document inventories the test systems, their graphs, relationship rules,
+and scenarios. See [AGENTS.md](AGENTS.md) for the rules for adding systems and
+formatting suites.
 
-## Спільна інфраструктура
+## Shared infrastructure
 
-`Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` — одна Core Data
-модель для чотирьох систем. Скомпільована `TestModel.momd` лежить поруч і входить
-лише до test target. `Support/TestStack.swift` завантажує модель у
-`NSInMemoryStoreType` за замовчуванням; кожен тест зі збереженням даних створює
-власний store. SQLite integration tests передають stack URL тимчасового store.
+`Tests/CoreDataMappingTests/Resources/TestModel.xcdatamodeld` is one Core Data
+model for four systems. The compiled `TestModel.momd` sits beside it and belongs
+only to the test target. `Support/TestStack.swift` loads the model into an
+`NSInMemoryStoreType` by default; every persistence test creates its own store.
+SQLite integration tests pass a temporary store URL to the stack.
 
-`Integration/Suites/SQLiteReopenTests.swift` перевіряє повний граф конгресу
-після відкриття store новим container, а також оновлення замовлення маркетплейсу
-після двох послідовних відкриттів. Він також перевіряє конгрес після скасування
-другої порції, наступного успішного запису й нового відкриття. Кожен тест має
-власний файл SQLite.
+`Integration/Suites/SQLiteReopenTests.swift` verifies a complete congress graph
+after a new container opens the store, and a marketplace order update after two
+successive reopenings. It also checks a congress after cancellation of the
+second batch, a subsequent successful write, and another reopen. Each test uses
+its own SQLite file.
 
 ## MedicalCongress
 
-`MedicalCongress/Entities/` містить 15 класів Entity. Поруч лежать
-`CongressGraphFixture.swift`,
-`GraphWriter.swift`, `GraphAssertions.swift`, `CongressTestStack.swift` і
-`Suites/`. Фікстура має конгрес із двома подіями; люди, кімнати, організації та
-матеріали використовуються в кількох частинах графа.
+`MedicalCongress/Entities/` contains 15 entity classes. The system also has
+`CongressGraphFixture.swift`, `GraphWriter.swift`, `GraphAssertions.swift`,
+`CongressTestStack.swift`, and `Suites/`. The fixture has one congress with two
+events; people, rooms, organizations, and resources are used in multiple parts
+of the graph.
 
-| Зв’язок | Правило |
+| Relationship | Rule |
 |---|---|
-| `Congress → CongressEvent` | Події — окремі root-записи; видалення конгресу розриває зв’язок. |
-| `Venue → Room` | Кімнати належать місцю проведення; видалення venue каскадне. |
-| `CongressEvent → Track → Session` | Подія володіє tracks, track — sessions; повний snapshot узгоджує їх за локальним ID. |
-| `CongressEvent → Appointment / Registration / EventSponsor` | Подія володіє зустрічами, реєстраціями й записами спонсорства та їхніми дочірніми join rows. |
-| `Session ↔ ResourceAsset` | Матеріали спільні; зміна membership не видаляє їх. |
-| `Person`, `Room`, `Organization` у дочірньому графі | Посилання на спільні записи не передають дочірнім Entity права на їх видалення. |
+| `Congress → CongressEvent` | Events are separate roots; deleting the congress nullifies the relationship. |
+| `Venue → Room` | Rooms belong to the venue; deleting the venue cascades to its rooms. |
+| `CongressEvent → Track → Session` | The event owns tracks and each track owns sessions; a full snapshot reconciles them by local ID. |
+| `CongressEvent → Appointment / Registration / EventSponsor` | The event owns appointments, registrations, sponsorship rows, and their child join rows. |
+| `Session ↔ ResourceAsset` | Resources are shared; membership changes do not delete them. |
+| `Person`, `Room`, `Organization` in the child graph | References to shared rows do not give child entities ownership of them. |
 
-Глобальні `Congress`, `CongressEvent`, `Organization`, `Person`, `Venue`, `Room`
-і `ResourceAsset` мають uniqueness constraint на `id`. `localID` дочірніх Entity
-унікальний лише в межах власника.
+Global `Congress`, `CongressEvent`, `Organization`, `Person`, `Venue`, `Room`,
+and `ResourceAsset` have a uniqueness constraint on `id`. A child entity's
+`localID` is unique only within its owner.
 
-| Suite | Сценарій |
+| Suite | Scenario |
 |---|---|
-| `CongressModelAndImportTests` | Правила схеми, batch identity lookup і перший запис повного графа. |
-| `CongressImportHistoryTests` | Послідовні та повторні імпорти, ізольоване оновлення події й історія з кількох збережень. |
-| `CongressSharedRelationshipsTests` | Зміна зв’язків із людьми, кімнатами, матеріалами й організаціями без втрати їхнього іншого використання. |
-| `CongressOwnedLifecycleTests` | Reconciliation і каскадне видалення дочірніх записів без видалення спільних Entity. |
-| `CongressTransactionsTests` | Rollback помилкового або скасованого batch, відкат після помилки Core Data під час save з успішним повтором, заборона mutation під час read і серіалізація конкурентних імпортів. |
-| `CongressImporterContractTests` | Серіалізація багатопорційних write/read після постановки другого виклику в чергу, порядок результатів read, commit/rollback transaction та граничні розміри batch. |
-| `CongressControlledConcurrencyTests` | Керовані бар’єрами два snapshots однієї події з читанням через окремий context; перекриття записів двох подій, rollback другого та успішний повтор. |
-| `CongressComplexTransitionsTests` | Багаторівневий snapshot з перестановкою, повторними локальними ID та збереженням identity; пізній збій другої порції, відкат і успішний повтор. |
-| `CongressStorageContractsTests` | Прямі контракти storage: повторні глобальні ID, видалення owned дітей і помилки Entity та relationship helpers. |
-| `CongressFetchPerformanceTests` | Кількість fetch-запитів при повторному імпорті не зростає зі збільшенням числа подій (1 → 8) або сесій однієї події (1 → 8). |
+| `CongressModelAndImportTests` | Schema rules, batch identity lookup, and the first write of the full graph. |
+| `CongressImportHistoryTests` | Sequential and repeated imports, isolated event updates, and history across multiple saves. |
+| `CongressSharedRelationshipsTests` | Changing links to people, rooms, resources, and organizations without losing their other uses. |
+| `CongressOwnedLifecycleTests` | Reconciliation and cascade deletion of child rows without deleting shared entities. |
+| `CongressTransactionsTests` | Rollback of failed or cancelled batches, rollback after a Core Data save failure and successful retry, mutation rejection during read, and serialization of concurrent imports. |
+| `CongressImporterContractTests` | Serialization of multi-batch writes and reads after a second call is queued, read result order, transaction commit/rollback, and batch size limits. |
+| `CongressControlledConcurrencyTests` | Barrier-controlled snapshots of one event observed through another context; overlapping writes to two events, rollback of the second, and successful retry. |
+| `CongressComplexTransitionsTests` | Multilevel snapshot reordering, repeated local IDs, and preserved identity; a late failure in the second batch, rollback, and retry. |
+| `CongressStorageContractsTests` | Direct storage contracts: repeated global IDs, deletion of owned children, and entity and relationship helper errors. |
+| `CongressFetchPerformanceTests` | Fetch counts during repeated imports stay constant as events (1 → 8) or sessions in one event (1 → 8) increase. |
 
 ## Marketplace
 
-`Marketplace/Entities/` містить 11 класів Entity. Поруч лежать
-`MarketplaceGraphFixture.swift`,
-`MarketplaceGraphWriter.swift`, `MarketplaceGraphAssertions.swift`,
-`MarketplaceTestStack.swift` і `Suites/`. Фікстура має два замовлення зі спільним
-товаром та однаковими локальними ID позицій. Це перевіряє, що позиція належить
-конкретному замовленню.
+`Marketplace/Entities/` contains 11 entity classes. The system also has
+`MarketplaceGraphFixture.swift`, `MarketplaceGraphWriter.swift`,
+`MarketplaceGraphAssertions.swift`, `MarketplaceTestStack.swift`, and `Suites/`.
+The fixture has two orders sharing a product and using the same local item IDs.
+It verifies that each item belongs to its own order.
 
-| Зв’язок | Правило |
+| Relationship | Rule |
 |---|---|
-| `Seller → Product` | Товар належить продавцю; видалення продавця каскадно видаляє його товари. |
-| `Product ↔ Category` | Категорії спільні; зміна membership не видаляє категорії. |
-| `Product → OrderItem ← Order` | Товар може бути в багатьох замовленнях; позиція належить лише своєму замовленню. |
-| `Product → Stock ← Warehouse` | Залишок має глобальний ID і посилається на товар та склад. |
-| `Order → Payment / Shipment` | Платежі й доставки належать замовленню; повний snapshot узгоджує лише його дітей. |
-| `Buyer → Order / Review`, `Product → Review` | Покупець спільний; відгук має глобальний ID і посилається на товар. |
+| `Seller → Product` | A product belongs to its seller; deleting the seller cascades to its products. |
+| `Product ↔ Category` | Categories are shared; membership changes do not delete them. |
+| `Product → OrderItem ← Order` | A product may appear in many orders; an item belongs only to its order. |
+| `Product → Stock ← Warehouse` | Stock has a global ID and refers to a product and a warehouse. |
+| `Order → Payment / Shipment` | Payments and shipments belong to the order; a full snapshot reconciles only its children. |
+| `Buyer → Order / Review`, `Product → Review` | The buyer is shared; a review has a global ID and refers to a product. |
 
-Глобальні buyers, sellers, products, categories, warehouses, stocks, orders і
-reviews мають identity `id`. `localID` позицій, платежів і доставок
-унікальний у межах свого замовлення.
+Buyers, sellers, products, categories, warehouses, stocks, orders, and reviews
+have global `id` identities. Item, payment, and shipment `localID` values are
+unique within their own order.
 
-| Suite | Сценарій |
+| Suite | Scenario |
 |---|---|
-| `MarketplaceModelAndImportTests` | Правила схеми та перший запис усього графа. |
-| `MarketplaceImportHistoryTests` | Повторний імпорт та оновлення одного замовлення без зміни іншого. |
-| `MarketplaceSharedRelationshipsTests` | Зміна категорій і залишку зі збереженням спільних зв’язків. |
-| `MarketplaceOwnedLifecycleTests` | Вилучення платежу, доставки та замовлення з очищенням лише його дітей. |
-| `MarketplaceTransactionsTests` | Rollback після дубльованого локального ID або відсутнього товару. |
+| `MarketplaceModelAndImportTests` | Schema rules and the first write of the full graph. |
+| `MarketplaceImportHistoryTests` | Repeated import and updating one order without changing the other. |
+| `MarketplaceSharedRelationshipsTests` | Changing categories and stock while preserving shared relationships. |
+| `MarketplaceOwnedLifecycleTests` | Removing a payment, shipment, or order while cleaning up only its children. |
+| `MarketplaceTransactionsTests` | Rollback after a duplicate local ID or missing product. |
 
 ## University
 
-`University/Entities/` містить 12 класів Entity. Поруч лежать
+`University/Entities/` contains 12 entity classes. The system also has
 `UniversityGraphFixture.swift`, `UniversityGraphWriter.swift`,
-`UniversityGraphAssertions.swift`, `UniversityTestStack.swift` і `Suites/`.
-Мала фікстура має два факультети, дві програми, три групи, три студенти,
-два курси і три проведення. Курс Algorithms проводиться у двох семестрах;
-студент Ada записаний на три проведення. Локальні ID записів, завдань і
-оцінок повторюються в різних власників.
+`UniversityGraphAssertions.swift`, `UniversityTestStack.swift`, and `Suites/`.
+The small fixture has two faculties, two programs, three groups, three students,
+two courses, and three offerings. Algorithms is offered in two semesters; Ada
+is enrolled in three offerings. Local enrollment, assignment, and grade IDs
+repeat under different owners.
 
-| Зв’язок | Правило |
+| Relationship | Rule |
 |---|---|
-| `Faculty → Program → Course / Group / Student` | Довідникові Entity мають глобальний `id`; зв’язки з факультетом і програмою розриваються без каскадного видалення. Студент належить одній групі, але може мати багато записів. |
-| `Course / Semester / Teacher / Room → Offering` | Проведення має глобальний `id`. Курс, семестр, викладач і аудиторія спільні; видалення проведення їх не видаляє. |
-| `Offering → Assignment / Enrollment` | Проведення володіє завданнями й записами, локальний `localID` унікальний у його межах. Повний snapshot узгоджує лише дітей конкретного проведення. |
-| `Enrollment → Grade → Assignment` | Запис володіє оцінками з локальним `localID`; оцінка посилається тільки на завдання того самого проведення. Повний snapshot видаляє відсутні оцінки. |
+| `Faculty → Program → Course / Group / Student` | Reference entities have global `id` values; links to faculties and programs nullify without cascade deletion. A student belongs to one group but may have many enrollments. |
+| `Course / Semester / Teacher / Room → Offering` | An offering has a global `id`. Courses, semesters, teachers, and rooms are shared; deleting an offering does not delete them. |
+| `Offering → Assignment / Enrollment` | An offering owns assignments and enrollments; `localID` is unique within it. A full snapshot reconciles only that offering's children. |
+| `Enrollment → Grade → Assignment` | An enrollment owns grades with local `localID` values; a grade refers only to an assignment in the same offering. A full snapshot deletes absent grades. |
 
-| Suite | Сценарій |
+| Suite | Scenario |
 |---|---|
-| `UniversityModelAndImportTests` | Inverse, delete rules, identity constraints і перший запис повного графа. |
-| `UniversityImportHistoryTests` | Послідовні імпорти, повторне використання objectID і незалежне оновлення проведення. |
-| `UniversityRelationshipsAndLifecycleTests` | Переміщення спільних посилань, reconciliation дітей і каскадне видалення проведення. |
-| `UniversityTransactionsTests` | Rollback дубльованих ID, хибних посилань, повторного запису студента та збереження попереднього batch. |
+| `UniversityModelAndImportTests` | Inverses, delete rules, identity constraints, and the first write of the full graph. |
+| `UniversityImportHistoryTests` | Sequential imports, object ID reuse, and independent offering updates. |
+| `UniversityRelationshipsAndLifecycleTests` | Moving shared references, reconciling children, and cascade deletion of an offering. |
+| `UniversityTransactionsTests` | Rollback for duplicate IDs, invalid references, duplicate student enrollment, and preservation of an earlier batch. |
 
 ## TravelBooking
 
-`TravelBooking/Entities/` містить 11 класів Entity. `TravelGraphFixture.swift`
-описує три поїздки двох напрямків: два мандрівники користуються тим самим
-рейсом і номером, третій має інший маршрут. У різних поїздках і бронюваннях
-повторюються локальні ID бронювань, гостей, платежів і квитків.
+`TravelBooking/Entities/` contains 11 entity classes. `TravelGraphFixture.swift`
+describes three trips on two routes: two travelers use the same flight and room,
+while a third takes a different route. Local booking, guest, payment, and ticket
+IDs repeat across trips and bookings.
 
-| Зв’язок | Правило |
+| Relationship | Rule |
 |---|---|
-| `Traveler → Trip` | Мандрівник є спільним записом із глобальним `id`; поїздка має окремий глобальний `id`. Видалення мандрівника не видаляє поїздки. |
-| `Trip → Booking → Guest / Payment / Ticket` | Поїздка володіє бронюваннями, а бронювання — дочірніми записами. Повний snapshot узгоджує їх за `localID` лише в межах власника; видалення каскадне. |
-| `Booking → Flight / Room` | Бронювання посилається рівно на один із цих спільних записів. Зміна маршруту або скасування не видаляє рейс чи номер. |
-| `Flight → Airport`, `Room → Hotel`, `Traveler → Loyalty` | Глобальні довідникові записи зберігаються при зміні membership; аеропорт може бути і пунктом прибуття, і пунктом відправлення. |
-| `Ticket → Guest` | Квиток посилається лише на гостя того самого бронювання; місце унікальне в межах бронювання. |
+| `Traveler → Trip` | A traveler is a shared row with a global `id`; a trip has its own global `id`. Deleting a traveler does not delete trips. |
+| `Trip → Booking → Guest / Payment / Ticket` | A trip owns bookings, and a booking owns its children. A full snapshot reconciles `localID` only within each owner; deletion cascades. |
+| `Booking → Flight / Room` | A booking refers to exactly one of these shared records. Rerouting or cancellation does not delete the flight or room. |
+| `Flight → Airport`, `Room → Hotel`, `Traveler → Loyalty` | Global reference records survive membership changes; an airport can be both an origin and a destination. |
+| `Ticket → Guest` | A ticket refers only to a guest in the same booking; seats are unique within a booking. |
 
-| Suite | Сценарій |
+| Suite | Scenario |
 |---|---|
-| `TravelModelAndImportTests` | Inverse, delete rules, повний граф і повторне використання рейсу та номера. |
-| `TravelHistoryAndLifecycleTests` | Окремі batch, повторний імпорт зі сталими objectID, перебронювання, зміна спільного каталогу, reconciliation та каскадне видалення. |
-| `TravelTransactionsTests` | Відкат дубльованого платежу, місця, хибного гостя квитка, некоректного типу бронювання й пізнішого batch. |
+| `TravelModelAndImportTests` | Inverses, delete rules, the full graph, and reuse of a flight and room. |
+| `TravelHistoryAndLifecycleTests` | Separate batches, repeated import with stable object IDs, rebooking, shared catalog changes, reconciliation, and cascade deletion. |
+| `TravelTransactionsTests` | Rollback for duplicate payments or seats, a foreign ticket guest, an invalid booking type, and a later batch. |
 
-## Перевірка
+## Verification
 
-Після зміни моделі запустіть `./Scripts/update-test-model.sh` і збережіть
-оновлену `.momd` разом із `.xcdatamodeld`. Для перевірки пакета запустіть
-`swift build` і `swift test`.
+After changing the model, run `./Scripts/update-test-model.sh` and commit the
+updated `.momd` with the `.xcdatamodeld`. Run `swift build` and `swift test` to
+verify the package.
 
-In-memory тести не перевіряють повторне відкриття SQLite; це роблять окремі
-disk-backed integration tests. Поведінка WAL та міграція моделі наразі не
-перевіряються.
+In-memory tests do not cover reopening SQLite; separate disk-backed integration
+tests do. WAL behavior and model migration are not currently covered.
 
-Лічильник у `CongressFetchPerformanceTests` вимірює fetch-запити, передані
-`NSPersistentStoreCoordinator`, а не кількість SQL-запитів у SQLite.
-`GraphAssertions` додатково звіряє сирий порядок `NSOrderedSet.array` після
-скидання read context; той самий assert виконується після відкриття SQLite.
+The counter in `CongressFetchPerformanceTests` measures fetch requests sent to
+`NSPersistentStoreCoordinator`, not SQL query counts in SQLite. `GraphAssertions`
+also compares the raw `NSOrderedSet.array` order after a read-context reset; the
+same assertion runs after SQLite reopening.

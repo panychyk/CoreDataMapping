@@ -1,18 +1,18 @@
 import CoreData
 import Testing
 
-/// Перевіряє, що після вилучення частини конгресу зникають пов’язані з нею
-/// записи. Люди, кімнати й матеріали, які використовуються деінде,
-/// залишаються доступними.
+/// Verifies removal of rows owned by a removed part of the congress. People,
+/// rooms, and resources used elsewhere remain available.
 ///
-/// - `participantSnapshot`: зайві записи участі зникають, люди залишаються.
-/// - `appointmentSnapshot`: вилучення зустрічі видаляє записи участі та зберігає
-///   людей і кімнати.
-/// - `sessionSnapshot`: вилучення сесії видаляє записи спікерів та зберігає
-///   людей і матеріали.
-/// - `registrationSnapshot`: вилучення реєстрації видаляє її check-in та зберігає людину.
-/// - `eventDeletion`: каскадне видалення прибирає дочірній граф події та зберігає
-///   спільні сутності.
+/// - `participantSnapshot`: surplus participation rows disappear; people remain.
+/// - `appointmentSnapshot`: removing an appointment deletes its participation
+///   rows while preserving people and rooms.
+/// - `sessionSnapshot`: removing a session deletes speaker rows while preserving
+///   people and resources.
+/// - `registrationSnapshot`: removing a registration deletes its check-in and
+///   preserves the person.
+/// - `eventDeletion`: cascade deletion removes an event's child graph and
+///   preserves shared entities.
 @MainActor
 @Suite("Medical congress · owned lifecycle")
 struct CongressOwnedLifecycleTests {

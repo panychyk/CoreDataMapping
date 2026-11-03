@@ -2,15 +2,15 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє повторний імпорт, зміну маршруту й каскадне видалення.
-/// Локальні ID із різних бронювань не зливаються, а спільний каталог зберігається.
+/// Verifies repeated import, rerouting, and cascade deletion. Local IDs from
+/// different bookings stay separate, and the shared catalog is preserved.
 ///
-/// - `sequentialTrips`: окремі batch збирають один спільний каталог.
-/// - `repeatPreservesIdentity`: повторний snapshot не створює нових дітей.
-/// - `rebookAndReconcile`: зміна рейсу, гостей, платежів і квитків локальна.
-/// - `sharedCatalogUpdate`: зміна аеропорту, готелю й лояльності відбивається на всіх посиланнях.
-/// - `cancelStay`: вилучення бронювання видаляє лише його дітей.
-/// - `deleteTrip`: видалення root каскадно видаляє бронювання без втрати каталогу.
+/// - `sequentialTrips`: separate batches assemble one shared catalog.
+/// - `repeatPreservesIdentity`: a repeated snapshot creates no new children.
+/// - `rebookAndReconcile`: flight, guest, payment, and ticket changes stay local.
+/// - `sharedCatalogUpdate`: airport, hotel, and loyalty changes reach every link.
+/// - `cancelStay`: removing a booking deletes only its children.
+/// - `deleteTrip`: deleting a root cascades to bookings without losing the catalog.
 @MainActor
 @Suite("Travel · history and lifecycle")
 struct TravelHistoryAndLifecycleTests {

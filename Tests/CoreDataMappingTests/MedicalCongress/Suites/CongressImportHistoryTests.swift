@@ -1,14 +1,14 @@
 import Testing
 
-/// Перевіряє, що після кількох імпортів дані конгресу залишаються повними й
-/// актуальними. Повторний імпорт не створює дублікатів, а оновлення однієї
-/// події не змінює іншу.
+/// Verifies that congress data remains complete and current after several
+/// imports. Repeated import creates no duplicates, and updating one event
+/// does not change the other.
 ///
-/// - `sequentialImports`: дві порції створюють цілісний граф двох подій.
-/// - `repeatedImport`: повторний snapshot використовує ті самі записи зустрічей.
-/// - `isolatedUpdate`: оновлення першої події не змінює другу.
-/// - `multistageHistory`: після чотирьох збережень зв’язки актуальні, а дочірні
-///   записи не залишаються «сиротами».
+/// - `sequentialImports`: two batches assemble a complete graph of two events.
+/// - `repeatedImport`: a repeated snapshot reuses the same appointment rows.
+/// - `isolatedUpdate`: updating the first event leaves the second unchanged.
+/// - `multistageHistory`: after four saves, links are current and no child
+///   rows are orphaned.
 @MainActor
 @Suite("Medical congress · import history")
 struct CongressImportHistoryTests {

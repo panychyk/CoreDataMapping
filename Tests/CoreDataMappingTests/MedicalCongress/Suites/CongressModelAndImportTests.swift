@@ -2,15 +2,15 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє, що модель конгресу правильно пов’язує дані, а перший імпорт
-/// зберігає їх для подальшого читання. Пошук за ідентифікаторами не створює
-/// дублікатів і коректно обробляє відсутні записи.
+/// Verifies congress model relationships and the first import for later reading.
+/// Identity lookup creates no duplicates and handles missing rows correctly.
 ///
-/// - `schemaRules`: inverse для кожного зв’язку та правила `Cascade` і `Nullify`.
-/// - `identityLookup`: дедуплікація ID, пропуск відсутніх записів і помилка для
-///   недопустимого розміру fetch-порції.
-/// - `fullGraphSurvivesContextReset`: усі сутності та зв’язки доступні після
-///   збереження й скидання контексту читання.
+/// - `schemaRules`: every relationship has an inverse and the proper `Cascade`
+///   or `Nullify` rule.
+/// - `identityLookup`: IDs are deduplicated, missing rows are omitted, and an
+///   invalid fetch chunk size throws.
+/// - `fullGraphSurvivesContextReset`: all entities and links remain available
+///   after saving and resetting the read context.
 @MainActor
 @Suite("Medical congress · model and initial import")
 struct CongressModelAndImportTests {

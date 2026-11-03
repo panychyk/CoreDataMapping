@@ -2,11 +2,11 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє атомарність оновлення замовлення при некоректному snapshot.
-/// Помилка залишає попередній збережений граф обох замовлень.
+/// Verifies atomic order updates for invalid snapshots. A failure preserves
+/// the previously saved graph of both orders.
 ///
-/// - `duplicateItemRollback`: дубль локального ID позиції відхиляє batch.
-/// - `missingProductRollback`: відсутній товар відкочує зміну замовлення.
+/// - `duplicateItemRollback`: a duplicate local item ID rejects the batch.
+/// - `missingProductRollback`: a missing product rolls back the order update.
 @MainActor
 @Suite("Marketplace · import transactions")
 struct MarketplaceTransactionsTests {

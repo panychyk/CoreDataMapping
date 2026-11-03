@@ -2,11 +2,12 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє правила моделі та перший запис повного університетського графа.
-/// Проведення курсу володіє дітьми, а викладачі й аудиторії є спільними.
+/// Verifies model rules and the first write of the full university graph.
+/// An offering owns its children, while teachers and rooms are shared.
 ///
-/// - `schemaRules`: усі 12 Entity мають inverse; owned-зв’язки каскадні.
-/// - `fullGraph`: курс у двох семестрах і студент у трьох проведеннях зберігають правильні оцінки.
+/// - `schemaRules`: all 12 entities have inverses and owned links cascade.
+/// - `fullGraph`: a course in two semesters and a student in three offerings
+///   preserve the correct grades.
 @MainActor
 @Suite("University · model and initial import")
 struct UniversityModelAndImportTests {

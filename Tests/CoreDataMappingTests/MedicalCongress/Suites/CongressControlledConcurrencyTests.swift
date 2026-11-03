@@ -1,14 +1,14 @@
 import CoreDataMapping
 import Testing
 
-/// Перевіряє видимість завершених snapshots і порядок конкурентних записів
-/// одного importer-а. Незаписані зміни не виходять за межі його context;
-/// rollback одного виклику не зачіпає попередній commit чи shared Entity.
+/// Verifies visibility of committed snapshots and ordering of concurrent writes
+/// through one importer. Unsaved changes stay within its context; rollback of
+/// one call preserves the previous commit and shared entities.
 ///
-/// - `twoFullSnapshotsExposeOnlyCommittedVersions`: окремий context бачить
-///   початковий граф, потім перший snapshot і лише після commit другий.
-/// - `concurrentEventUpdatesRollbackThenRecover`: два записи різних подій
-///   перекриваються; відкат другого зберігає перший, а повтор завершує граф.
+/// - `twoFullSnapshotsExposeOnlyCommittedVersions`: another context sees the
+///   initial graph, then the first snapshot, then the second after its commit.
+/// - `concurrentEventUpdatesRollbackThenRecover`: overlapping event writes roll
+///   back the second while preserving the first, then succeed on retry.
 @MainActor
 @Suite("Medical congress · controlled concurrent imports")
 struct CongressControlledConcurrencyTests {

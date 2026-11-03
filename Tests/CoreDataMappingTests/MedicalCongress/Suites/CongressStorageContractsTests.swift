@@ -2,18 +2,18 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє прямі контракти CoreDataStorage на малій фікстурі конгресу.
-/// Пошук зберігає глобальну identity, видалення стосується лише owned дітей,
-/// а некоректні Entity та relationships відхиляються без зміни збереженого графа.
+/// Verifies direct CoreDataStorage contracts on the small congress fixture.
+/// Lookup preserves global identity, deletion affects only owned children,
+/// and invalid entities or relationships leave the saved graph unchanged.
 ///
-/// - `repeatedGlobalID`: останній DTO з однаковим ID задає збережені scalar fields.
-/// - `deleteSurplusOwned`: зайва зустріч видаляється лише зі своєї події.
-/// - `duplicateExistingOwnedID`: дубль ID серед наявних дітей відкочує batch.
-/// - `detachedRelationship`: об’єкт без context відхиляється в ordered replace.
-/// - `deletedRelationship`: видалений об’єкт відхиляється в unordered replace.
-/// - `wrongOrderedType`: ordered bridge відхиляє Entity іншого типу.
-/// - `unknownEntity`: insert відхиляє відсутню в моделі Entity.
-/// - `wrongEntityClass`: insert відхиляє невідповідність Entity та Swift-класу.
+/// - `repeatedGlobalID`: the last DTO with an ID supplies saved scalar fields.
+/// - `deleteSurplusOwned`: a surplus appointment is deleted only from its event.
+/// - `duplicateExistingOwnedID`: duplicate IDs among current children roll back a batch.
+/// - `detachedRelationship`: ordered replace rejects an object without a context.
+/// - `deletedRelationship`: unordered replace rejects a deleted object.
+/// - `wrongOrderedType`: the ordered bridge rejects an entity of the wrong type.
+/// - `unknownEntity`: insert rejects an entity missing from the model.
+/// - `wrongEntityClass`: insert rejects an entity and Swift-class mismatch.
 @MainActor
 @Suite("Medical congress · storage contracts")
 struct CongressStorageContractsTests {

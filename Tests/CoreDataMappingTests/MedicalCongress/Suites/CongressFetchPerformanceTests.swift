@@ -3,13 +3,13 @@ import CoreDataMapping
 import Foundation
 import Testing
 
-/// Перевіряє кількість fetch-запитів під час повторного імпорту графа конгресу.
-/// Більше подій і owned-дітей не має додавати fetch усередині mapping loops.
+/// Verifies fetch request counts during repeated congress graph imports. More
+/// events or owned children must not add fetches inside mapping loops.
 ///
-/// - `fetchCountDoesNotGrowWithEvents`: повторний імпорт восьми подій виконує
-///   стільки ж fetch-запитів, скільки повторний імпорт однієї події.
-/// - `fetchCountDoesNotGrowWithSessions`: повторний імпорт події з вісьмома
-///   сесіями виконує стільки ж fetch-запитів, як із однією сесією.
+/// - `fetchCountDoesNotGrowWithEvents`: importing eight events again uses the
+///   same number of fetches as importing one event again.
+/// - `fetchCountDoesNotGrowWithSessions`: importing an event with eight sessions
+///   again uses the same number of fetches as with one session.
 @MainActor
 @Suite("Medical congress · fetch performance")
 struct CongressFetchPerformanceTests {

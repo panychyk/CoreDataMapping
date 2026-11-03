@@ -2,12 +2,14 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє послідовні імпорти і локальну ідентичність дітей проведення.
-/// Повторний snapshot зберігає objectID, а оновлення одного семестру не чіпає інший.
+/// Verifies sequential imports and local identities of offering children.
+/// A repeated snapshot preserves object IDs; updating one semester leaves
+/// another unchanged.
 ///
-/// - `sequentialImports`: два окремі збереження збирають повний граф.
-/// - `repeatedImport`: root, записи, завдання й оцінки повторно використовують objectID.
-/// - `isolatedSemesterUpdate`: зміни оцінок і складу одного проведення не змінюють інші.
+/// - `sequentialImports`: two separate saves assemble the full graph.
+/// - `repeatedImport`: roots, enrollments, assignments, and grades reuse object IDs.
+/// - `isolatedSemesterUpdate`: changing one offering's grades and membership
+///   leaves other offerings unchanged.
 @MainActor
 @Suite("University · import history")
 struct UniversityImportHistoryTests {

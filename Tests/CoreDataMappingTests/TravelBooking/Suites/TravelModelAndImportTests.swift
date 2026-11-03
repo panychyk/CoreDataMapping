@@ -2,12 +2,12 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє схему та початковий запис графа подорожей.
-/// Каскад стосується лише дітей поїздки й бронювання; каталог лишається спільним.
+/// Verifies the schema and initial travel graph import. Cascade applies only
+/// to trip and booking children; the catalog remains shared.
 ///
-/// - `schemaRules`: inverse, delete rules та identity constraints відповідають ownership.
-/// - `fullGraph`: три поїздки з повторними локальними ID зберігають усі зв’язки.
-/// - `sharedCatalog`: кілька бронювань використовують ті самі рейс і номер.
+/// - `schemaRules`: inverses, delete rules, and identity constraints match ownership.
+/// - `fullGraph`: three trips with repeated local IDs preserve every link.
+/// - `sharedCatalog`: multiple bookings reuse the same flight and room.
 @MainActor
 @Suite("Travel · model and initial import")
 struct TravelModelAndImportTests {

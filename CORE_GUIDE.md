@@ -1,46 +1,60 @@
-# Практичний посібник: core і зв’язки
+# Practical guide: core API and relationships
 
-Це посібник із використання `CoreDataMapping` у застосунку. Почніть із [README](README.md); інваріанти пакета й межі його відповідальності описані в [ARCHITECTURE.md](ARCHITECTURE.md). Назви вхідних snapshots та Entity у фрагментах коду — приклади; конкретні типи визначає споживач пакета.
+Language: **English** · [Українська](CORE_GUIDE.uk.md)
 
-Приклад із медичним конгресом, двома подіями та спільними людьми, кімнатами й
-матеріалами є у `Tests/CoreDataMappingTests/MedicalCongress/GraphWriter.swift`.
-Приклад маркетплейсу — `Marketplace/MarketplaceGraphWriter.swift`: товар належить
-продавцю, але використовується в багатьох замовленнях і категоріях; позиції,
-платежі й доставки узгоджуються в межах свого замовлення. Приклади університету
-й бронювання подорожей лежать у `University/UniversityGraphWriter.swift` та
-`TravelBooking/TravelGraphWriter.swift`. Усі чотири системи використовують
-спільну модель `Resources/TestModel.xcdatamodeld` і окремий in-memory store
-для кожного тесту. Сценарії та правила зв’язків описані в
-[TESTING.md](TESTING.md).
+This guide explains how to use `CoreDataMapping` in an application. Start with
+the [README](README.md); [ARCHITECTURE.md](ARCHITECTURE.md) describes the package
+invariants and boundaries. Snapshot and entity names in code snippets are
+examples; the consuming application defines the concrete types.
 
-## 1. Що робить core
+The medical congress example, with two events and shared people, rooms, and
+resources, is in `Tests/CoreDataMappingTests/MedicalCongress/GraphWriter.swift`.
+The marketplace example is in `Marketplace/MarketplaceGraphWriter.swift`: a
+product belongs to a seller but is used by many orders and categories; items,
+payments, and shipments are reconciled within their order. University and
+travel booking examples are in `University/UniversityGraphWriter.swift` and
+`TravelBooking/TravelGraphWriter.swift`. All four systems use the shared
+`Resources/TestModel.xcdatamodeld` and a separate in-memory store per test.
+See [TESTING.md](TESTING.md) for scenarios and relationship rules.
 
-| Частина | Для чого потрібна | Чого не вирішує |
+## 1. What the core API does
+
+| Component | Purpose | Outside its scope |
 |---|---|---|
-| `CoreDataEntityIdentity<Entity, Id>` | Називає Entity, її єдиний атрибут identity та Swift key path до нього | Не конструює ID із вхідних значень і не створює constraint у моделі |
-| `CoreDataStorage` | У межах одного context пакетно знаходить/створює записи та допомагає узгодити relationships | Не декодує вхідні дані, не вибирає власника дитини й не викликає `save` |
-| `CoreDataImporter` | Виконує `write`, `read` і малі `transaction` на одному private context, серіалізує виклики | Не вирішує, який snapshot новіший і які root-записи видаляти |
+| `CoreDataEntityIdentity<Entity, Id>` | Names an entity, its single identity attribute, and its Swift key path | Does not construct an ID from input values or create a model constraint |
+| `CoreDataStorage` | Finds or creates records in batches within one context and helps reconcile relationships | Does not decode input, choose a child's owner, or call `save` |
+| `CoreDataImporter` | Runs `write`, `read`, and small `transaction` operations on one private context, serializing calls | Does not choose the newer snapshot or decide which root records to delete |
 
-Ці три частини містяться у двох файлах пакета: [CoreDataStorage.swift](Sources/CoreDataMapping/CoreDataStorage.swift) (включно з identity) та [CoreDataImporter.swift](Sources/CoreDataMapping/CoreDataImporter.swift). `CoreDataStack`, `.xcdatamodel`, вхідні snapshots і правила запису графа належать споживачу.
+These components are in two package files: [CoreDataStorage.swift](Sources/CoreDataMapping/CoreDataStorage.swift)
+(including identity) and [CoreDataImporter.swift](Sources/CoreDataMapping/CoreDataImporter.swift).
+The consumer owns `CoreDataStack`, `.xcdatamodel`, input snapshots, and graph
+mapping rules.
 
-**Контракт mapper-а:** він працює лише на черзі context, отриманого через importer, і не передає `NSManagedObject` назовні. Вхідне значення для `write` має бути `Sendable`; результат `read` або `transaction` також має бути `Sendable`. У mapper не викликайте `save`, `rollback` чи `reset`.
+**Mapper contract:** it runs only on the queue of the context supplied through
+the importer and never passes `NSManagedObject` instances outside it. Input to
+`write` must be `Sendable`; the result of `read` or `transaction` must also be
+`Sendable`. Do not call `save`, `rollback`, or `reset` in a mapper.
 
-Шпаргалка операцій `CoreDataStorage`:
+`CoreDataStorage` operations at a glance:
 
-| Виклик | Результат |
+| Call | Result |
 |---|---|
-| `existing(ids:identifiedBy:)` | Пакетний пошук; відсутні ID пропущені, нові Entity не створюються |
-| `upsert(ids:identifiedBy:)` | Пакетний пошук і створення відсутніх Entity з автоматичним присвоєнням identity; scalar-поля заповнює mapper |
-| `upsert(_:id:identifiedBy:update:)` | Те саме, а потім `update` для кожного вхідного значення у вхідному порядку |
-| `insert(_:)` | Створення Entity без глобального lookup, з моделі поточного context |
-| `replace(with:)` / `replaceUnordered(with:)` | Новий набір членів зв’язку без видалення Entity |
-| `reconcileOwned` / `deleteSurplusOwned` | Видалення зайвих owned children у **повному** snapshot |
+| `existing(ids:identifiedBy:)` | Batch lookup; missing IDs are omitted and no entities are created |
+| `upsert(ids:identifiedBy:)` | Batch lookup and creation of missing entities with identity assigned automatically; the mapper fills scalar fields |
+| `upsert(_:id:identifiedBy:update:)` | The same, followed by `update` for each input value in input order |
+| `insert(_:)` | Creates an entity without global lookup, using the current context's model |
+| `replace(with:)` / `replaceUnordered(with:)` | New relationship membership without deleting entities |
+| `reconcileOwned` / `deleteSurplusOwned` | Deletes surplus owned children in a **full** snapshot |
 
-`existing` і обидва `upsert` приймають `prefetching` для relationships, які mapper читатиме. Вони повертають lookup `[Id: Entity]`, що живе лише всередині поточної операції importer-а.
+`existing` and both `upsert` methods accept `prefetching` for relationships the
+mapper will read. They return an `[Id: Entity]` lookup that lives only within
+the current importer operation.
 
-## 2. Мінімальний запис і читання
+## 2. Minimal write and read
 
-Для Entity зі стабільним глобальним ID оголосіть у `.xcdatamodel` обов’язковий атрибут `id` та uniqueness constraint на `id`. У Swift-оголошенні додайте descriptor, наприклад:
+For an entity with a stable global ID, declare a required `id` attribute and a
+uniqueness constraint on `id` in `.xcdatamodel`. Add a descriptor to its Swift
+declaration, for example:
 
 ```swift
 nonisolated extension ReservationTopicEntity {
@@ -52,7 +66,8 @@ nonisolated extension ReservationTopicEntity {
 }
 ```
 
-Коли `topicSnapshots: [TopicSnapshot]` уже підготовлено, використайте `importer`, створений від завантаженого persistent container:
+With `topicSnapshots: [TopicSnapshot]` prepared, use an importer created from
+the loaded persistent container:
 
 ```swift
 try await importer.write(topicSnapshots) { batch, storage in
@@ -75,33 +90,52 @@ let names = try await importer.read(ids) { ids, storage in
 }
 ```
 
-`upsert` спершу готує всі distinct ID, потім оновлює вхідні значення у заданому порядку. Повторний ID отримує останні scalar-значення. `existing` повертає лише знайдені записи; політику для відсутнього обов’язкового root задає код споживача. Жодна з цих операцій не видаляє root, відсутній у вхідному наборі.
+`upsert` prepares all distinct IDs first, then updates input values in order.
+For a repeated ID, the last scalar values win. `existing` returns only found
+records; consumer code defines what to do with a missing required root. Neither
+operation deletes roots absent from the input.
 
-`write` зберігає й звільняє context після кожної порції roots (`batchSize`, типово 500). Помилка або скасування відкотить поточну порцію; раніше збережені порції залишаться. `read` іде тією самою чергою, не дозволяє mutations і повертає лише Swift-значення. `transaction` призначено для малої атомарної операції. `fetchChunkSize` у storage окремо обмежує розмір пошуку `IN`; це не розмір commit-порції.
+`write` saves and resets the context after each batch of roots (`batchSize`,
+500 by default). Failure or cancellation rolls back the current batch; earlier
+saved batches remain committed. `read` uses the same queue, rejects mutations,
+and returns only Swift values. `transaction` is for a small atomic operation.
+Storage's `fetchChunkSize` separately limits an `IN` lookup, not commit size.
 
-Для кількох операцій, які змінюють спільні записи, передавайте один importer. Після `write` окремий `read` бачить актуальний кеш; між цими викликами може завершитися інший імпорт, тому результат не є ізольованим знімком одного вхідного snapshot.
+Use one importer for operations that change shared records. A separate `read`
+after `write` sees current persisted state, but another import may finish
+between the calls, so the result is not an isolated view of one input snapshot.
 
-## 3. Підготувати граф і вибрати операцію для зв’язку
+## 3. Prepare the graph and choose relationship operations
 
-Порядок для batch mapper-а:
+Order of work for a batch mapper:
 
-1. Для повних повторних root snapshots визначте актуальний snapshot кожного ID **до** поділу на порції. Останній snapshot кожного root має перемагати.
-2. Пакетно викличте `upsert` для roots і залежностей із глобальними ID. Для наявних children із parent-scoped ID завантажте relationship батька через `prefetching`.
-3. З’єднайте готові об’єкти зі словників `[Id: Entity]`; fetch усередині циклу зв’язування не робіть.
-4. Для повного snapshot видаліть лише пропущених **owned** children. Shared-об’єкти залиште в store.
+1. For repeated full root snapshots, choose the current snapshot for each ID
+   **before** splitting into batches. The last snapshot of each root wins.
+2. Batch `upsert` roots and dependencies with global IDs. For existing children
+   with parent-scoped IDs, load the parent's relationship with `prefetching`.
+3. Connect prepared objects from `[Id: Entity]` dictionaries. Do not fetch
+   inside the relationship mapping loop.
+4. For a full snapshot, delete only omitted **owned** children. Keep shared
+   objects in the store.
 
-Identity відповідає на «це той самий запис?», ownership — «хто має право його видалити?». Вони незалежні: attendee має глобально унікальний складений ключ, але належить одному appointment.
+Identity answers “is this the same record?”; ownership answers “who may delete
+it?” They are independent: an attendee can have a globally unique composite
+key while belonging to one appointment.
 
-| Ситуація | Операція в mapper-і при повному snapshot |
+| Situation | Mapper operation for a full snapshot |
 |---|---|
-| Shared Entity з глобальним ID, наприклад topic або user | `upsert`; для to-one присвоїти `parent.user = usersById[id]`, для to-many — `replace` або `replaceUnordered`. При вилученні зі списку прибрати лише зв’язок |
-| Owned child з ID лише всередині батька, наприклад custom field | `reconcileOwned` з **поточними дітьми цього батька**; helper перевикористовує збіги й видаляє зайвих. Повернений список присвоїти relationship |
-| Owned child із глобальним або складеним ID, наприклад attendee | `upsert(ids:)` для всього batch, встановити зв’язок, викликати `deleteSurplusOwned` для дітей цього батька |
-| Owned child без стабільного ID | Явно зіставити за позицією або бізнес-ключем, створити потрібних і видалити зайвих; позиція не зберігає identity при перестановці |
+| Shared entity with a global ID, such as a topic or user | `upsert`; assign `parent.user = usersById[id]` for to-one or use `replace` / `replaceUnordered` for to-many. Removing an item removes only the relationship. |
+| Owned child with an ID scoped to its parent, such as a custom field | Use `reconcileOwned` with **that parent's current children**. The helper reuses matches and deletes surplus rows. Assign its returned list to the relationship. |
+| Owned child with a global or composite ID, such as an attendee | Call `upsert(ids:)` for the whole batch, set the relationship, then call `deleteSurplusOwned` for that parent's children. |
+| Owned child without a stable ID | Match explicitly by position or business key, create needed children, and delete surplus ones. Position does not preserve identity when reordered. |
 
-`replace(with:)` створює ordered membership (`NSOrderedSet`), `replaceUnordered(with:)` — unordered (`Set`). Обидва перевіряють context та стан об’єктів, прибирають повтори й **не видаляють Entity**. Для перевіреного читання ordered relationship є `CoreDataStorage.ordered(...)`; `nil` дає порожній масив, неправильний тип — помилку.
+`replace(with:)` creates ordered membership (`NSOrderedSet`), while
+`replaceUnordered(with:)` creates unordered membership (`Set`). Both validate
+context and object state, remove duplicates, and **do not delete entities**.
+For checked reads of an ordered relationship, use `CoreDataStorage.ordered(...)`;
+`nil` produces an empty array, while a wrong element type throws an error.
 
-Фрагмент для дитини з ID лише в межах appointment:
+Example for a child whose ID is scoped to an appointment:
 
 ```swift
 let current = try CoreDataStorage.ordered(
@@ -121,32 +155,56 @@ let incoming = try storage.reconcileOwned(
 appointment.customFields = try storage.replace(with: incoming)
 ```
 
-`reconcileOwned` не задає ID нової дитини: це має зробити `update`. Він відхиляє повторний scoped ID у вхідному або поточному списку. `current` не може бути глобальною вибіркою дітей. Для to-one і to-many обидва кінці зв’язку мають належати одному context; scalar `parentId` сам по собі relationship не встановлює.
+`reconcileOwned` does not set a new child's ID; `update` must do that. It
+rejects duplicate scoped IDs in the incoming or current list. `current` must
+not be a global selection of children. For both to-one and to-many, both ends
+of the relationship must belong to one context; a scalar `parentId` alone does
+not establish a relationship.
 
-Якщо child mapper потребує ID батька або словник залежностей, передайте їх параметрами з parent mapper-а. У моделі, яка має обидві властивості, `child.parentId = parent.id` зберігає scalar, а `child.parent = parent` встановлює relationship. Для child → shared user передайте вже підготовлений `usersById`; окремий fetch у child mapper-і не потрібний.
+If a child mapper needs the parent ID or dependency dictionary, pass them from
+the parent mapper. In a model with both properties, `child.parentId = parent.id`
+stores the scalar, while `child.parent = parent` establishes the relationship.
+For child → shared user, pass the prepared `usersById`; the child mapper does
+not need a separate fetch.
 
-**Повний чи частковий payload:** у прикладі повного snapshot `nil`/відсутня колекція означає `[]` і очищає owned children. Для часткового snapshot такий запис може випадково стерти дані. Розрізняйте «поле не надіслано», `null` і `[]` окремим контрактом вхідних значень та правил запису; не запускайте reconciliation за неповною сторінкою.
+**Full versus partial payload:** in a full snapshot, `nil` or a missing
+collection means `[]` and clears owned children. For a partial snapshot, this
+could erase data accidentally. Give “field not sent,” `null`, and `[]` distinct
+input contracts and mapping rules; do not reconcile from an incomplete page.
 
-## 4. Delete Rule: що станеться при видаленні батька
+## 4. Delete rules when a parent is deleted
 
-Delete Rule задається **на relationship від джерела до призначення** у `.xcdatamodel`. Вона діє, коли видаляють екземпляр джерела; просте вилучення елемента з relationship живого батька — інша операція. Для кожного зв’язку задайте inverse і окремо оберіть правило для кожного напрямку.
+A delete rule is set **on the relationship from source to destination** in
+`.xcdatamodel`. It acts when the source instance is deleted. Removing one item
+from a live parent's relationship is a different operation. Define an inverse
+for each relationship and choose a rule for each direction separately.
 
-| Правило на `parent → child` | При видаленні `parent` | Коли обирати |
+| Rule on `parent → child` | When `parent` is deleted | When to use it |
 |---|---|---|
-| `Cascade` | Core Data видаляє пов’язаних children | Child належить лише цьому parent і не має жити без нього: `Appointment → attendees/customFields`, `CustomField → multipleValues` |
-| `Nullify` | Core Data розриває посилання у зворотному зв’язку; child залишається | Child спільний або має власний життєвий цикл: `Appointment → topics/user/realLocation` |
-| `Deny` | Видалення parent не проходить, поки relationship має children | Бізнес-правило вимагає спершу перенести чи явно прибрати залежні записи; обробіть помилку видалення |
-| `No Action` | Core Data не оновлює пов’язані об’єкти | Лише якщо застосунок сам узгоджує **всі** зворотні посилання/видалення; інакше можна залишити неконсистентний граф |
+| `Cascade` | Core Data deletes related children | The child belongs only to this parent and cannot live without it: `Appointment → attendees/customFields`, `CustomField → multipleValues` |
+| `Nullify` | Core Data clears the inverse reference; the child remains | The child is shared or has its own lifecycle: `Appointment → topics/user/realLocation` |
+| `Deny` | Parent deletion fails while the relationship has children | A business rule requires moving or explicitly removing dependent records first; handle the deletion error |
+| `No Action` | Core Data does not update related objects | Only when the application maintains **all** inverse references and deletions itself; otherwise the graph may become inconsistent |
 
-Зазвичай `Cascade` підходить для owned, а `Nullify` — для shared. Не ставте `Cascade` на shared-relationship: видалення одного parent тоді видалить запис, потрібний іншим. Для живого parent `Cascade` не замінює reconciliation: коли child зник із повного snapshot, `reconcileOwned` або `deleteSurplusOwned` видаляє його явно. `replace` лише розриває/замінює membership.
+`Cascade` usually fits owned children and `Nullify` fits shared records. Do not
+put `Cascade` on a shared relationship: deleting one parent would delete a row
+needed by others. For a live parent, `Cascade` does not replace reconciliation:
+when a child disappears from a full snapshot, `reconcileOwned` or
+`deleteSurplusOwned` deletes it explicitly. `replace` only changes membership.
 
-Семантика чотирьох правил: [Apple, Configuring Relationships](https://developer.apple.com/documentation/coredata/configuring-relationships). Для `No Action` Apple окремо попереджає про [ризик неузгоджених посилань](https://developer.apple.com/documentation/coredata/nsdeleterule/noactiondeleterule).
+See [Apple's relationship configuration](https://developer.apple.com/documentation/coredata/configuring-relationships)
+for all four rules and its separate warning about [inconsistent references
+with `No Action`](https://developer.apple.com/documentation/coredata/nsdeleterule/noactiondeleterule).
 
-## 5. ID із двох властивостей
+## 5. IDs made from two properties
 
-Якщо `childId` унікальний лише в межах parent і ви завжди працюєте з дітьми одного parent, вистачає `reconcileOwned(current: ...)`. Однаковий `childId` у двох батьків тоді є двома різними Entity.
+If `childId` is unique only under one parent and you always work with that
+parent's children, `reconcileOwned(current: ...)` is enough. Identical `childId`
+values under different parents then represent different entities.
 
-Коли child потрібен для **пакетного глобального lookup**, створіть стабільний persistence ID з обох частин. Наприклад, `AppointmentAttendeeEntity.makeId` отримує два `Int`:
+If a child needs a **batch global lookup**, make a stable persistence ID from
+both components. For example, `AppointmentAttendeeEntity.makeId` takes two
+`Int` values:
 
 ```swift
 static func makeId(appointmentId: Int, userId: Int) -> String {
@@ -154,7 +212,9 @@ static func makeId(appointmentId: Int, userId: Int) -> String {
 }
 ```
 
-Для цієї пари цілих чисел ключ однозначний. У схемі `AppointmentAttendeeEntity.id` — обов’язковий `String` з uniqueness constraint. Mapper рахує ключі для **всього batch** до зв’язування:
+That key is unambiguous for this pair of integers. In the schema,
+`AppointmentAttendeeEntity.id` is a required `String` with a uniqueness
+constraint. The mapper computes keys for the **whole batch** before linking:
 
 ```swift
 let attendeeIds = batch.flatMap { dto in
@@ -171,9 +231,13 @@ let attendeesById = try storage.upsert(
 )
 ```
 
-Під час з’єднання використайте **ту саму** `makeId`, візьміть Entity з `attendeesById`, задайте `attendee.appointment` і `attendee.user`, присвойте `appointment.attendees`, після цього видаліть surplus owned children.
+When linking, use the **same** `makeId`, retrieve the entity from
+`attendeesById`, set `attendee.appointment` and `attendee.user`, assign
+`appointment.attendees`, and then delete surplus owned children.
 
-Для довільних рядкових частин просте `"\(a)_\(b)"` може дати колізію: пари `("a_b", "c")` і `("a", "b_c")` дадуть той самий рядок. Один із варіантів однозначного кодування:
+For arbitrary string components, a simple `"\(a)_\(b)"` can collide:
+`("a_b", "c")` and `("a", "b_c")` produce the same string. One unambiguous
+encoding is:
 
 ```swift
 static func makeId(parentId: String, childId: String) -> String {
@@ -181,23 +245,35 @@ static func makeId(parentId: String, childId: String) -> String {
 }
 ```
 
-Перевірте обраний формат тестом. Якщо він зміниться після випуску застосунку, потрібна міграція існуючих записів.
+Test the chosen format. Changing it after an application release requires a
+migration of existing records.
 
-Core Data дозволяє uniqueness constraint із кількох атрибутів, але поточний `CoreDataEntityIdentity`/`CoreDataStorage.existing` шукає через **один** identity-атрибут. Для lookup за двома окремими колонками потрібно розширювати core; сам багатопольовий constraint цього пошуку не додає. Див. [Apple, uniquenessConstraints](https://developer.apple.com/documentation/coredata/nsentitydescription/uniquenessconstraints).
+Core Data allows uniqueness constraints over multiple attributes, but the
+current `CoreDataEntityIdentity` / `CoreDataStorage.existing` lookup uses **one**
+identity attribute. Lookup across two separate columns would require extending
+the core API; the multi-attribute constraint does not add that lookup. See
+[Apple's `uniquenessConstraints`](https://developer.apple.com/documentation/coredata/nsentitydescription/uniquenessconstraints).
 
-## 6. Якщо відповідь не є простим повним snapshot
+## 6. Responses that are not simple full snapshots
 
-| Ситуація | Рішення на рівні graph writer |
+| Situation | Graph writer decision |
 |---|---|
-| API повертає сторінки | Не видаляйте дітей після однієї неповної сторінки. Узгодьте повний snapshot батька після отримання всіх сторінок або задайте окрему політику merge |
-| Root зник із повного списку | `upsert` сам його не видаляє. Код споживача має отримати deleted IDs або порівняти повний список у потрібному scope й явно видалити root |
-| Циклічні зв’язки або лише ID залежності | Спочатку підготуйте identities всіх потрібних типів, потім з’єднайте граф. Для відсутньої залежності явно оберіть помилку, відкладений зв’язок або валідний placeholder |
-| Кілька повних snapshots одного root | Залиште останній snapshot перед поділом на batch, інакше старіший snapshot може зайво видалити й створити owned children |
+| The API returns pages | Do not delete children after one incomplete page. Reconcile a parent's full snapshot after receiving every page, or define a separate merge policy. |
+| A root disappears from a full list | `upsert` does not delete it. Consumer code must receive deleted IDs or compare the complete list in the relevant scope and explicitly delete the root. |
+| Cyclic relationships or dependency IDs only | Prepare identities for all required types first, then link the graph. For a missing dependency, explicitly choose an error, a deferred relationship, or a valid placeholder. |
+| Multiple full snapshots of one root | Keep the last snapshot before batching; otherwise an older snapshot may unnecessarily delete and recreate owned children. |
 
-## 7. Коротка перевірка перед використанням
+## 7. Checklist before use
 
-- Новий граф проходить create → save → repeat → update → remove → reload без дубльованих дітей.
-- Shared-записи переживають розрив зв’язку й видалення одного з батьків; owned-записи зникають після видалення свого батька.
-- Однакові scoped child IDs у різних батьків не змішуються; складений ключ не має колізій.
-- Усі `NSManagedObject` використовуються на черзі свого context. Потрібні relationships завантажені через `prefetching`, а не окремими fetch у циклі.
-- Зміна моделі Core Data у застосунку супроводжується Swift-оголошеннями Entity, кодом запису та SQLite integration tests. Після зміни тестової `.xcdatamodeld` цього пакета запустіть `Scripts/update-test-model.sh` і збережіть `.momd` разом із нею.
+- A new graph survives create → save → repeat → update → remove → reload without
+  duplicate children.
+- Shared records survive unlinking and deletion of one parent; owned records
+  disappear when their parent is deleted.
+- Identical scoped child IDs under different parents stay separate, and
+  composite keys do not collide.
+- Every `NSManagedObject` is used on its context queue. Required relationships
+  are loaded through `prefetching`, without individual fetches in a loop.
+- Core Data model changes in the application include matching Swift entity
+  declarations, mapping code, and SQLite integration tests. After changing
+  this package's test `.xcdatamodeld`, run `Scripts/update-test-model.sh` and
+  commit the `.momd` with it.

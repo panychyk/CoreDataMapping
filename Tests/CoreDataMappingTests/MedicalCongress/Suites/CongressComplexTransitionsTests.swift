@@ -1,14 +1,14 @@
 import CoreDataMapping
 import Testing
 
-/// Перевіряє складні переходи повного графа конгресу: перестановку та
-/// узгодження вкладених дітей, повторні локальні ID у різних власників і
-/// відкат пізньої помилки без втрати вже збереженої порції.
+/// Verifies complex full-graph transitions: reordering and reconciling nested
+/// children, repeated local IDs under different owners, and rollback of a late
+/// failure without losing an earlier committed batch.
 ///
-/// - `multilevelSnapshot`: одночасна зміна shared-зв’язків і кількох рівнів
-///   owned-дітей зберігає identity незмінених записів та іншу подію.
-/// - `lateFailureAndRetry`: помилка в кінці другої порції відкочує всі її
-///   зміни; повторний коректний імпорт завершує граф без дублікатів.
+/// - `multilevelSnapshot`: changes to shared links and multiple levels of owned
+///   children preserve unchanged row identities and the other event.
+/// - `lateFailureAndRetry`: a failure late in the second batch rolls back all its
+///   changes; a valid retry completes the graph without duplicates.
 @MainActor
 @Suite("Medical congress · complex graph transitions")
 struct CongressComplexTransitionsTests {

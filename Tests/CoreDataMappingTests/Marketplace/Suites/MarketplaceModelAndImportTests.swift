@@ -2,13 +2,12 @@ import CoreData
 import CoreDataMapping
 import Testing
 
-/// Перевіряє спільну Core Data модель і перший запис повного графа
-/// маркетплейсу: продавці, товари, категорії, склади, замовлення та відгуки.
+/// Verifies the shared Core Data model and first import of the full marketplace
+/// graph: sellers, products, categories, warehouses, orders, and reviews.
 ///
-/// - `schemaRules`: усі зв’язки мають inverse, а owned і shared зв’язки —
-///   відповідні правила видалення.
-/// - `fullGraph`: усі 11 типів Entity і їхні зв’язки зберігаються після reset
-///   контексту читання.
+/// - `schemaRules`: every relationship has an inverse and owned and shared links
+///   have the appropriate delete rules.
+/// - `fullGraph`: all 11 entity types and their links survive a read-context reset.
 @MainActor
 @Suite("Marketplace · model and initial import")
 struct MarketplaceModelAndImportTests {
