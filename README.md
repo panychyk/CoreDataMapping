@@ -2,7 +2,7 @@
 
 A Swift package for writing, reading, and reconciling large, connected Core Data graphs.
 It provides `CoreDataEntityIdentity`, `CoreDataStorage`, and `CoreDataImporter`.
-It requires iOS 18 or macOS 15 or later.
+It requires iOS 16 or macOS 15 or later.
 
 The application creates and loads an `NSPersistentContainer`, then passes the importer
 a private context connected directly to the store coordinator:
